@@ -1,5 +1,8 @@
 # Présentation globale du projet
 ## Naissance de l’idée
+Nous voulions faire un jeu à la fois amusant, dificile et impliquant des parties courtes.
+Après de nombreuses sessions de réflexion, d'appels et de brainstorms, l'idée est née de programmer pour ce projet un jeu s'assimilant à un "capture the flag".
+Nous avons cependant décider de modifier la plupart des aspects du jeu.
 ## Problématique initiale
 ## Objectifs
 
