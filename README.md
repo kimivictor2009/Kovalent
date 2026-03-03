@@ -1,4 +1,4 @@
-# Projet3
+# Kovalent
 Projet 3 de NSI
 Voir "présentation.md" pour plus d'informations sur le projet
 ## Pour lancer le projet
