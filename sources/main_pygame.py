@@ -15,10 +15,13 @@
 
 ---------- HISTORIQUE DES MODIFICATIONS ----------
 
--> VERSION 1.0
-    - Création d'une fenêtre avec pygame
-    - Frame dans la fenêtre de dimensions HEIGHT, WIDTH
-
+=> VERSION 1
+    -> Version 1.0, Victor
+        - Création d'une fenêtre avec pygame
+        - Frame dans la fenêtre de dimensions HEIGHT, WIDTH
+    -> Version 1.1, Victor
+        - Fonction render() pour tester
+        - Affichage atomes et liaisons (TEST, sera supprimé)
 
 ==================== main.py ====================
 
@@ -42,6 +45,7 @@ atomes = [{"id" : 1, "nom" : "C", "pos" : (127, 208), "liaisons" : [(2, 2), (3, 
 
 
 BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 
 
 SCALE = 100 # Taille de la fenêtre en %, tout doit être proportionnel - peut être modifié à volonté
@@ -56,6 +60,16 @@ pg.init()
 surface = pg.display.set_mode(WINDOW_SIZE)
 pg.display.set_caption("Kovalent")
 
+
+def render() -> None :
+    for atome in atomes :
+        pg.draw.circle(surface, WHITE, (atome["pos"][0]*2, atome["pos"][1]*2), 10)
+        for liaison in atome["liaisons"] :
+            for atome2 in atomes :
+                if atome2["id"] == liaison[0] :
+                    pg.draw.line(surface, WHITE, (atome["pos"][0]*2, atome["pos"][1]*2), (atome2["pos"][0]*2, atome2["pos"][1]*2), 5*liaison[1])
+
+
 running = True
 
 while running == True :
@@ -64,6 +78,8 @@ while running == True :
             running = False
     
     surface.fill(BLACK)
+    render()
     pg.display.flip()
     
 pg.quit()
+
