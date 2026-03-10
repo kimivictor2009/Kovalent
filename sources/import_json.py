@@ -1,6 +1,6 @@
 import json
 
-with open('niveau.json', 'r',encoding="utf-8") as file:
+with open('data/niveau.json', 'r',encoding="utf-8") as file:
     data = json.load(file)#importe le dict json sous le nom de data
 """
 for i in range(len(data["niveau"])):
@@ -11,7 +11,7 @@ for i in range(len(data["niveau"])):
         print(j)
     print("")
 """
-with open('atome.json', 'r',encoding="utf-8") as fichier:
+with open('data/atome.json', 'r',encoding="utf-8") as fichier:
     donnee = json.load(fichier)
 
 for i in range(len(donnee["atome"])):
@@ -21,4 +21,5 @@ for i in range(len(donnee["atome"])):
     print(donnee["atome"][i]["couleur"])
     print(donnee["atome"][i]["rayon"])
     
+
     print("")
