@@ -3,9 +3,9 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 2.01
+Version : 2.02
 
-Dernière édition : Victor, 11/03/2025, 18:55
+Dernière édition : Victor, 11/03/2025, 19:05
 
 
 ---------- COMMENTAIRE ----------
@@ -69,6 +69,7 @@ La variable tick augmente de 1 à chaque frame, pour faire des animations
         - Bouton de retour au menu principal
         - Petit effet stylé supplémentaire dans l'intro
         -> Version 2.01 : Changement des couleurs de boutons
+        -> version 2.02 : Ajout d'une option pour mettre le font par défaut avec la variable default_font
 
 ==================== main.py ====================
 '''
@@ -86,6 +87,7 @@ from screeninfo import get_monitors
 
 fenetre_basique = True
 skip_intro = False
+default_font = False
 
 if skip_intro :
     tick = 200
@@ -149,7 +151,12 @@ pg.display.set_caption("Kovalent")
 # ----- Fonts -----
 
 pg.font.init()
-fichier_font = pg.font.get_default_font() #"data/super_font.otf"
+
+if not default_font :
+    fichier_font = "data/super_font.otf"
+else :
+    fichier_font = pg.font.get_default_font()
+
 
 f20 = pg.font.Font(fichier_font, 20)
 f25 = pg.font.Font(fichier_font, 25)
@@ -330,6 +337,7 @@ while running == True :
 
 pg.font.quit()
 pg.quit()
+
 
 
 
