@@ -3,9 +3,9 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 1.6
+Version : 2.0
 
-Dernière édition : Victor, 10/03/2025, 16:02
+Dernière édition : Victor, 11/03/2025, 15:21
 
 
 ---------- COMMENTAIRE ----------
@@ -46,18 +46,28 @@ La variable tick augmente de 1 à chaque frame, pour faire des animations
     -> Version 1.2, Victor
         - Fonctions create_text() et print_text(), permettant d'afficher du texte dans la fenêtre
         - Structuration du code
-    -> Version 1.3
+    -> Version 1.3 Victor
         - Dimensionnage automatique de la fenêtre, qui s'adapte à l'écran principal
         - Variable fenetre_basique à changer pour avoir une fenêtre de dimension prédéfinie (pour les devs)
-    -> Version 1.4
+    -> Version 1.4 Victor
         - Ajout d'un ticker
         - Ajout d'une intro
         - Ajout d'un titre du menu
-    -> Version 1.5
+    -> Version 1.5 Victor
         - Police de caractère style futuriste
-    -> Version 1.6
+    -> Version 1.6 Victor
         - Fonction permettant de faire des boutons
         - Bouton "Jouer" (non fonctionnel, test)
+        
+=> VERSION 2
+    -> Version 2.0 Victor
+        - Problème avec la police, encore à régler
+        - Problème avec screeninfo, encore à régler
+        - Ajout d'une variable menu qui dit où on est
+        - Ajout d'un bouton pour les régles du jeu
+        - Effet des boutons (changer le menu)
+        - Bouton de retour au menu principal
+        - Petit effet stylé supplémentaire dans l'intro
 
 ==================== main.py ====================
 '''
@@ -90,6 +100,7 @@ atoms = [{"id" : 1, "name" : "C", "pos" : (127, 208), "links" : [(2, 2), (3, 1),
 
 BLACK = (0, 0, 0)
 DARK_GREY = (100, 100, 100)
+LIGHT_GREY = (200, 200, 200)
 WHITE = (255, 255, 255)
 YELLOW = (200, 200, 0)
 
@@ -139,10 +150,31 @@ pg.display.set_caption("Kovalent")
 pg.font.init()
 fichier_font = pg.font.get_default_font() #"data/super_font.otf"
 
+f20 = pg.font.Font(fichier_font, 20)
+f25 = pg.font.Font(fichier_font, 25)
+f30 = pg.font.Font(fichier_font, 30)
+f40 = pg.font.Font(fichier_font, 40)
+f50 = pg.font.Font(fichier_font, 50)
+f70 = pg.font.Font(fichier_font, 70)
+
 def create_text(text : str, size : int, color : tuple = WHITE) -> pg.Surface :
     '''Renvoie une Surface de texte, à blit pour afficher'''
     
-    font = pg.font.Font(fichier_font, size)
+    if size == 20 :
+        font = f20
+    elif size == 25 :
+        font = f25
+    elif size == 30 :
+        font = f30
+    elif size == 40 :
+        font = f40
+    elif size == 50 :
+        font = f50
+    elif size == 70 :
+        font = f70
+    else :
+        font = pg.font.Font(fichier_font, size) # Très "laggy" de faire celui-là, utilisez une taille déjà faite svp
+        
     return font.render(text, True, color)
 
 
@@ -162,33 +194,75 @@ def print_txt(text : str, pos : tuple, size : int = 30, color : tuple = WHITE, c
 def render() -> None :
     '''Affiche tout ce qu'il faut afficher à l'écran'''
     
+    global menu
+    
     # Les 200 premiers ticks sont pour une petite intro
     
     if tick < 200 :
-        if tick < 20 :
-            surface.fill(BLACK)
-        elif tick <= 80 :
-            surface.fill(BLACK)
-            teinte = ((tick-20)/60)*255
-            print_txt("KVTeam", (600, 350), 50, (teinte, teinte, teinte), True)
-        elif tick >= 170 :
-            surface.fill(BLACK)
-            teinte = (1-((tick-170)/30))*255
-            print_txt("KVTeam", (600, 350), 50, (teinte, teinte, teinte), True)
+        menu = "main"
+        intro()
     else :
-        surface.fill(DARK_GREY)
-        main_menu()
+        if menu == "main" :
+            main_menu()
+        elif menu == "level select" :
+            level_select()
+        elif menu == "rules" :
+            rules()
 
+
+def intro() -> None :
+    '''Fait une intro des ticks 0 à 200'''
+    if tick < 20 :
+        surface.fill(BLACK)
+    elif tick <= 80 :
+        surface.fill(BLACK)
+        teinte = ((tick-20)/60)*255
+        print_txt("KVTeam", (600, 350), 50, (teinte, teinte, teinte), True)
+        pg.draw.rect(surface, BLACK, ((200 + 200-((tick-20)/60)*200)*SCALE, 200*SCALE, 200*SCALE, 600*SCALE))
+        pg.draw.rect(surface, BLACK, ((800 - 200+((tick-20)/60)*200)*SCALE, 200*SCALE, 200*SCALE, 600*SCALE))
+    elif tick >= 170 :
+        surface.fill(BLACK)
+        teinte = (1-((tick-170)/30))*255
+        print_txt("KVTeam", (600, 350), 50, (teinte, teinte, teinte), True)
 
 
 def main_menu() -> None :
     '''Affiche le menu principal'''
-    if tick < 300 :
-        print_txt("KOVALENT", (600, 100), 70, WHITE, True)
-    else :
-        print_txt("KOVALENT", (600, 100), 70, WHITE, True)
+    global menu
     
-    button((450, 300, 300, 100), "Jouer", BLACK, 50, WHITE, DARK_GREY)
+    surface.fill(DARK_GREY)
+    
+    print_txt("KOVALENT", (600, 100), 70, WHITE, True)
+    
+    if button((450, 300, 300, 100), "Jouer", BLACK, 60, WHITE, LIGHT_GREY) :
+        menu = "level select"
+    
+    if button((400, 500, 400, 100), "Règles du jeu", BLACK, 50, WHITE, LIGHT_GREY) :
+        menu = "rules"
+
+
+def rules() -> None :
+    '''Affiche le menu des règles du jeu'''
+    global menu
+    
+    surface.fill(DARK_GREY)
+    
+    print_txt("Règles du jeu", (600, 100), 70, WHITE, True)
+    
+    if button((50, 650, 300, 100), "Retour", BLACK, 60, WHITE, LIGHT_GREY) :
+        menu = "main"
+
+
+def level_select() -> None :
+    '''Affiche le menu de sélection du niveau à jouer'''
+    global menu
+    
+    surface.fill(DARK_GREY)
+    
+    print_txt("Sélectionnez un niveau", (600, 100), 70, WHITE, True)
+    
+    if button((50, 650, 300, 100), "Retour", BLACK, 60, WHITE, LIGHT_GREY) :
+        menu = "main"
 
 
 def button(rect : tuple, text : str, text_color : tuple, text_size : int, color : tuple, color2 : tuple) -> bool :
@@ -208,7 +282,11 @@ def button(rect : tuple, text : str, text_color : tuple, text_size : int, color 
     if mpx >= rleft*SCALE and mpy >= rtop*SCALE and mpx <= (rleft + rwidth)*SCALE and mpy <= (rtop + rheight)*SCALE :
         pg.draw.rect(surface, color2, (rleft*SCALE, rtop*SCALE, rwidth*SCALE, rheight*SCALE))
         print_txt(text, ((rleft + (rwidth/2)), (rtop + (rheight/2))), text_size, text_color, True)
-        return True
+        if pg.mouse.get_pressed()[0] : # click gauche
+            #print("truc")
+            return True
+        else :
+            return False
     else :
         pg.draw.rect(surface, color, (rleft*SCALE, rtop*SCALE, rwidth*SCALE, rheight*SCALE))
         print_txt(text, ((rleft + (rwidth/2)), (rtop + (rheight/2))), text_size, text_color, True)
@@ -219,6 +297,7 @@ def button(rect : tuple, text : str, text_color : tuple, text_size : int, color 
 
 # -----<===== BOUCLE PRINCIPALE =====>-----
 
+menu = "main"
 
 clock = pg.time.Clock()
 
@@ -234,9 +313,22 @@ while running == True :
     render()
     pg.display.flip()
     
+    
+    # ----- TESTS -----
+    
+    #print(menu)
+    #print(pg.mouse.get_pressed())
+    
+    # -----------------
+    
+    
     tick += 1 # + 1 ticks par frame (60 par seconde)
     clock.tick(60) # Met le FPS à 60
     
+
+
+pg.font.quit()
 pg.quit()
+
 
 
