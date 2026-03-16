@@ -29,7 +29,7 @@ présente-toi, parle de ton expérience et ambitions, etc...
 ## Rôle de chacun et répartition des tâches
 ### Victor
 Je suis responsable de l'organisation du projet, de la plupart des documents en dehors du code, et du rôle de chacun.
-Chacun a un rôle de même ampleur dans le code. Ma partie est de faire les menus et l'affichage des atomes, donc plutôt au début du projet, pour pouvoir être disponible pour débugger et m'occuper du reste vers la fin du projet.
+Chacun a un rôle de même ampleur dans le code. Ma partie est de faire les menus, l'affichage des atomes et la détection de la victoire.
 
 ### Kimi
 ce que tu fais
