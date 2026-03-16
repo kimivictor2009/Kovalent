@@ -1,11 +1,14 @@
+# Projet : Kovalent
+# Auteurs : Victor, Kimi ("KVTeam") et Noé
+
 '''
 ==================== KOVALENT ====================
 
 Bandeau d'informations - tenir à jour !
 
-Version : 2.02
+Version : 3.1
 
-Dernière édition : Victor, 11/03/2025, 19:05
+# Dernière édition : Noé, 16/03/2026, 19:05
 
 
 ---------- COMMENTAIRE ----------
@@ -68,8 +71,17 @@ La variable tick augmente de 1 à chaque frame, pour faire des animations
         - Effet des boutons (changer le menu)
         - Bouton de retour au menu principal
         - Petit effet stylé supplémentaire dans l'intro
-        -> Version 2.01 : Changement des couleurs de boutons
-        -> version 2.02 : Ajout d'une option pour mettre le font par défaut avec la variable default_font
+        -> Version 2.0.1 : Changement des couleurs de boutons
+        -> version 2.0.2 : Ajout d'une option pour mettre le font par défaut avec la variable default_font
+
+=> VERSION 3
+    -> Version 3.0 Noé
+        - Ajout du menu de sélection des niveaux
+        - Boutons de sélection
+        - Menu de jeu basique
+    -> Version 3.1 Noé, Victor
+        - Correction et relecture
+
 
 ==================== main.py ====================
 '''
@@ -81,13 +93,13 @@ La variable tick augmente de 1 à chaque frame, pour faire des animations
 
 from __future__ import annotations
 import pygame as pg
-from screeninfo import get_monitors
+#from screeninfo import get_monitors
 
 # ----- Couleurs, constantes et variables/tableaux/autres -----
-
+current_level = 0
 fenetre_basique = True
-skip_intro = False
-default_font = False
+skip_intro = True
+default_font = True
 
 if skip_intro :
     tick = 200
@@ -106,7 +118,6 @@ DARK_GREY = (100, 100, 100)
 LIGHT_GREY = (200, 200, 200)
 WHITE = (255, 255, 255)
 YELLOW = (200, 200, 0)
-
 
 # ----- Initialisation de pygame et création de la fenêtre -----
 
@@ -216,7 +227,8 @@ def render() -> None :
             level_select()
         elif menu == "rules" :
             rules()
-
+        elif menu == "game": 
+            game()
 
 def intro() -> None :
     '''Fait une intro des ticks 0 à 200'''
@@ -225,7 +237,7 @@ def intro() -> None :
     elif tick <= 80 :
         surface.fill(BLACK)
         teinte = ((tick-20)/60)*255
-        print_txt("KVTeam", (600, 350), 50, (teinte, teinte, teinte), True)
+        print_txt("NKVTeam", (600, 350), 50, (teinte, teinte, teinte), True)
         pg.draw.rect(surface, BLACK, ((200 + 200-((tick-20)/60)*200)*SCALE, 200*SCALE, 200*SCALE, 600*SCALE))
         pg.draw.rect(surface, BLACK, ((800 - 200+((tick-20)/60)*200)*SCALE, 200*SCALE, 200*SCALE, 600*SCALE))
     elif tick >= 170 :
@@ -261,16 +273,39 @@ def rules() -> None :
         menu = "main"
 
 
-def level_select() -> None :
+def level_select() :
     '''Affiche le menu de sélection du niveau à jouer'''
-    global menu
+    global menu, current_level
     
     surface.fill(DARK_GREY)
-    
-    print_txt("Sélectionnez un niveau", (600, 100), 70, WHITE, True)
-    
-    if button((50, 650, 300, 100), "Retour", BLACK, 60, LIGHT_GREY, WHITE) :
+    print_txt("Sélectionnez un niveau", (600, 80), 70, WHITE, True)
+
+    if button((50, 650, 300, 100), "Retour", BLACK, 60, LIGHT_GREY, WHITE):
         menu = "main"
+
+    num = 1
+    for l in range(5):
+        for i in range(10):
+            x_pos = 150 + i * 100 - 30
+            y_pos = 200 + l * 90 - 30
+            
+            if button((x_pos, y_pos, 60, 60), str(num), BLACK, 30, LIGHT_GREY, WHITE):
+                current_level = num # On enregistre le niveau
+                menu = "game"       
+            num += 1
+
+
+def game():
+    '''Affiche l'écran du niveau sélectionné et le jeu'''
+    global menu
+    surface.fill((60, 60, 60)) 
+    
+    
+    print_txt("NIVEAU " + str(current_level), (525, 100), 50, WHITE, True)
+
+    
+    if button((20, 20, 180, 50), "Quitter", BLACK, 30, LIGHT_GREY, WHITE):
+        menu = "level select"
 
 
 def button(rect : tuple, text : str, text_color : tuple, text_size : int, color : tuple, color2 : tuple) -> bool :
@@ -337,6 +372,8 @@ while running == True :
 
 pg.font.quit()
 pg.quit()
+
+
 
 
 
