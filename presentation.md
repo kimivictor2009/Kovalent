@@ -21,7 +21,7 @@ Nos projets peuvent être trouvés, avec les autres projets de la classe, à cet
 Je suis motivé pour ce projet-ci, et j'espère que le rendu sera le meilleur possible et qu'on le finisse à temps.
 
 ### Kimi Vandaele-Otozaki
-présente-toi, parle de ton expérience et ambitions, etc...
+I like programming
 
 ### Noé Boissimon
 présente-toi, parle de ton expérience et ambitions, etc...
