@@ -6,18 +6,15 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 3.1
+Version : jsp
 
-# Dernière édition : Noé, 16/03/2026, 19:05
+# Dernière édition : Kimi, 16/03/2026, 19:25
 
 
 ---------- COMMENTAIRE ----------
 
-J'ai trouvé un moyen de dessiner les atomes et liaisons,
-mais c'était juste pour remplir la fonction render
-Je l'ai supprimé pour faire le menu
-J'ai mis tous les noms de trucs en anglais
-La variable tick augmente de 1 à chaque frame, pour faire des animations
+le mouse pressed je pense il marche pas prcq de ce que j'ai compris c'est toujours le meme bouton eft ou jsp quoi
+sinon ya du json importé
 
 
 ---------- NOTES ----------
@@ -81,7 +78,9 @@ La variable tick augmente de 1 à chaque frame, pour faire des animations
         - Menu de jeu basique
     -> Version 3.1 Noé, Victor
         - Correction et relecture
-
+=> VERSION jsp Kimi
+    -> Version jsp.0
+        -niveau et atomes importés
 
 ==================== main.py ====================
 '''
@@ -93,13 +92,22 @@ La variable tick augmente de 1 à chaque frame, pour faire des animations
 
 from __future__ import annotations
 import pygame as pg
+import json
 #from screeninfo import get_monitors
+
+#-----Fichier json importés-----
+#kimi
+with open('data/niveau.json', 'r',encoding="utf-8") as file:
+    json_niveau = json.load(file)#importe le dict json sous le nom de json_niveau
+with open('data/atome.json', 'r',encoding="utf-8") as fichier:
+    json_atome = json.load(fichier)#importe le dict json sous le nom de json_atome
 
 # ----- Couleurs, constantes et variables/tableaux/autres -----
 current_level = 0
 fenetre_basique = True
 skip_intro = True
 default_font = True
+mouse_pressed = False
 
 if skip_intro :
     tick = 200
@@ -209,6 +217,12 @@ def print_txt(text : str, pos : tuple, size : int = 30, color : tuple = WHITE, c
 
 # -----<===== FONCTIONS PRINCIPALES =====>-----
 
+def click() -> bool :#kimi
+    '''renvoie True si on clique gauche, sinon False'''
+    
+    click_state = pg.mouse.get_pressed()[0] 
+    return click_state
+
 
 def render() -> None :
     '''Affiche tout ce qu'il faut afficher à l'écran'''
@@ -312,7 +326,7 @@ def button(rect : tuple, text : str, text_color : tuple, text_size : int, color 
     '''Affiche un bouton à rect(gauche, haut, longueur, hauteur),
     du texte, avec couleur et taille, et sa couleur, et renvoie True si il est cliqué.
     Il passe à la couleur de color2 (optionnel) quand la souris est dessus'''
-    
+    global mouse_pressed
     rleft = rect[0]
     rtop = rect[1]
     rwidth = rect[2]
@@ -325,11 +339,12 @@ def button(rect : tuple, text : str, text_color : tuple, text_size : int, color 
     if mpx >= rleft*SCALE and mpy >= rtop*SCALE and mpx <= (rleft + rwidth)*SCALE and mpy <= (rtop + rheight)*SCALE :
         pg.draw.rect(surface, color2, (rleft*SCALE, rtop*SCALE, rwidth*SCALE, rheight*SCALE))
         print_txt(text, ((rleft + (rwidth/2)), (rtop + (rheight/2))), text_size, text_color, True)
-        if pg.mouse.get_pressed()[0] : # click gauche
+        if click() :# click gauche
             #print("truc")
-            return True
+            return True   
         else :
             return False
+                
     else :
         pg.draw.rect(surface, color, (rleft*SCALE, rtop*SCALE, rwidth*SCALE, rheight*SCALE))
         print_txt(text, ((rleft + (rwidth/2)), (rtop + (rheight/2))), text_size, text_color, True)
@@ -372,7 +387,6 @@ while running == True :
 
 pg.font.quit()
 pg.quit()
-
 
 
 
