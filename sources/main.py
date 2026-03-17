@@ -1,20 +1,18 @@
 # Projet : Kovalent
-# Auteurs : Victor, Kimi ("NKVTeam") et Noé
+# Auteurs : Victor, Kimi ("KVTeam") et Noé
 
 '''
 ==================== KOVALENT ====================
 
 Bandeau d'informations - tenir à jour !
 
-Version : 4.2
+Version : 4.3
 
-Dernière édition : Victor, 17/03/2026, 13:46
+Dernière édition : Victor, 17/03/2026, 15:59
 
 
 ---------- COMMENTAIRE ----------
 
-Problème : les couleurs sont dégeulasse
-Merci Kimi de régler ça
 D'ailleurs on s'était gourré dans le compte des versions
 
 ---------- NOTES ----------
@@ -95,6 +93,11 @@ D'ailleurs on s'était gourré dans le compte des versions
             pour chercher les infos sur l'atome à afficher
         - La couleur dans json_atome est en string et pas en tuple[int, int, int] donc
             formatage des dict de la liste pour afficher les atomes dans la bonne couleur
+    -> Version 4.3 Victor
+        - Fixé le json
+        - Ajout de liaisons
+        - Début pour les liaisons doubles
+        - Optimisation
 
 
 ==================== main.py ====================
@@ -108,6 +111,7 @@ D'ailleurs on s'était gourré dans le compte des versions
 from __future__ import annotations
 import pygame as pg
 import json
+from math import *
 #from screeninfo import get_monitors
 
 # ----- Fichiers json importés -----
@@ -119,29 +123,14 @@ with open('data/niveau.json', 'r',encoding="utf-8") as file:
 with open('data/atome.json', 'r',encoding="utf-8") as fichier:
     json_atome = json.load(fichier) # importe le dict json sous le nom de json_atome
 
-json_atome = json_atome["atome"] #maintenant c'est plus un dict c'est une list
+json_atome = json_atome["atome"] # maintenant c'est plus un dict c'est une list
+json_niveau = json_niveau["niveau"]
 
-
-# FORMATAGE DES COULEURS (j'ai brain)
-# str -> tuple(int, int, int)
+# Formatage des couleurs
 # Victor
 
-for i in range(len(json_atome)-1) :
-    c = json_atome[i]["couleur"] # donc prend une valeur genre '(255, 255, 255)' mais en str
-    #print(c)
-    # il faut la convertir en tuple
-    result = [0, 0, 0]
-    temp = ""
-    no = 0
-    for j in range(1, len(c)-2) : # on ne parcoure pas les ()
-        if c[j] == "," :
-            result[no] = int(temp)
-            no += 1
-            temp = ""
-        elif c[j] != " " : # c'est ni une virgule, ni un espace, c'est un chiffre !
-            temp += c[j]
-
-    json_atome[i]["couleur"] = (result[0], result[1], result[2])
+for i in range(len(json_atome)) :
+    json_atome[i]["couleur"] = tuple(json_atome[i]["couleur"])
 
 
 # ----- Couleurs, constantes et variables/tableaux/autres -----
@@ -157,10 +146,10 @@ else :
     tick = 0
 
 # Test pour une molécule de CH2O (chaque ligne est un atome)
-atoms = [{"id" : 1, "name" : "C", "pos" : (508, 416), "links" : [(2, 2), (3, 1), (4, 1)]},
+atoms = [{"id" : 1, "name" : "C", "pos" : (702, 493), "links" : [(2, 2), (3, 1), (4, 1)]},
           {"id" : 2, "name" : "O", "pos" : (376, 430), "links" : [(1, 2)]},
-          {"id" : 3, "name" : "H", "pos" : (524, 498), "links" : [(1, 1)]},
-          {"id" : 4, "name" : "H", "pos" : (536, 314), "links" : [(1, 1)]}]
+          {"id" : 3, "name" : "H", "pos" : (868, 631), "links" : [(1, 1)]},
+          {"id" : 4, "name" : "H", "pos" : (684, 314), "links" : [(1, 1)]}]
 
 
 BLACK = (0, 0, 0)
@@ -302,7 +291,7 @@ def intro() -> None :
     elif tick <= 80 :
         surface.fill(BLACK)
         teinte = ((tick-20)/60)*255
-        print_txt("NKVTeam", (600, 350), 50, (teinte, teinte, teinte), True)
+        print_txt("KVTeam", (600, 350), 50, (teinte, teinte, teinte), True)
         pg.draw.rect(surface, BLACK, ((200 + 200-((tick-20)/60)*200)*SCALE, 200*SCALE, 200*SCALE, 600*SCALE))
         pg.draw.rect(surface, BLACK, ((800 - 200+((tick-20)/60)*200)*SCALE, 200*SCALE, 200*SCALE, 600*SCALE))
     elif tick >= 170 :
@@ -361,6 +350,7 @@ def level_select() :
             
             if button((x_pos, y_pos, 60, 60), str(num), BLACK, 30, LIGHT_GREY, WHITE):
                 current_level = num # On enregistre le niveau
+                level_info = json_niveau[num-1]
                 menu = "game"       
             num += 1
 
@@ -377,15 +367,46 @@ def game():
     
     display_atoms(atoms)
 
+def scaling(pos : tuple) -> tuple[int, int] :
+    '''Prend une paire de coordonnées et la renvoie après l'avoir mise à l'échelle'''
+    x = int(pos[0]*SCALE)
+    y = int(pos[1]*SCALE)
+    return (x, y)
+
 
 def display_atoms(a : list) -> None :
-    '''Affiche les atomes de la liste entrée'''
+    '''Affiche les atomes de la liste entrée et leur liaisons'''
     
-    for i in a : # dessine les atomes
+    for i in range(len(a)) : # pour chaque atome
+        p = a[i]["pos"]
+        for j in a[i]["links"] :
+            if a.index(find_in_dlist(atoms, "id", j[0])) > i :
+                p2 = find_in_dlist(atoms, "id", j[0])["pos"]
+                if j[1] == 1 :
+                    pg.draw.line(surface, LIGHT_GREY, scaling(p), scaling(p2), 10)
+                elif j[1] == 2 :
+                    # Kalkuls matématik
+                    vect_x = p[0]-p2[0]
+                    vect_y = p[1]-p2[1]
+                    x = p[0]+(vect_y/(0.1*sqrt(vect_x**2+vect_y**2)))
+                    y = p[1]+(vect_x/(0.1*sqrt(vect_x**2+vect_y**2)))
+                    
+                    x2 = p2[0]+(vect_y/(0.1*sqrt(vect_x**2+vect_y**2)))
+                    y2 = p2[1]+(vect_x/(0.1*sqrt(vect_x**2+vect_y**2)))
+                                    
+                    pg.draw.line(surface, LIGHT_GREY, scaling((x, y)), scaling((x2, y2)), 10)
+                elif j[1] == 3 :
+                    pg.draw.line(surface, LIGHT_GREY, scaling(p), scaling(p2), 10)
+                elif j[1] == 4 :
+                    pg.draw.line(surface, LIGHT_GREY, scaling(p), scaling(p2), 10)
+            
+            
+    for i in a : # pour chaque atome
         a_info = find_in_dlist(json_atome, "symbole", i["name"])
         p = i["pos"]
-        pg.draw.circle(surface, a_info["couleur"], (p[0]*SCALE, p[1]*SCALE), a_info["rayon"]*SCALE)
+        pg.draw.circle(surface, a_info["couleur"], scaling(p), a_info["rayon"]*SCALE)
         print_txt(i["name"], p, a_info["rayon"]*1.3, BLACK, True)
+
     
     print_txt("Debug : mousepos=" + str(pg.mouse.get_pos()), (600, 750), 30, WHITE, True)
 
@@ -427,8 +448,10 @@ def button(rect : tuple, text : str, text_color : tuple, text_size : int, color 
         print_txt(text, ((rleft + (rwidth/2)), (rtop + (rheight/2))), text_size, text_color, True)
         return False
     
-    
+
+
 print(json_atome)
+
 
 # -----<===== BOUCLE PRINCIPALE =====>-----
 
