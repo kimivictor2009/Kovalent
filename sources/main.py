@@ -6,14 +6,14 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 4.3
+Version : 5.0
 
-Dernière édition : Victor, 17/03/2026, 15:59
+Dernière édition : Victor, 17/03/2026, 19:18
 
 
 ---------- COMMENTAIRE ----------
 
-D'ailleurs on s'était gourré dans le compte des versions
+Si vous faites un truc, vérifiez que c'est pas déjà fait ;)
 
 ---------- NOTES ----------
 
@@ -99,6 +99,12 @@ D'ailleurs on s'était gourré dans le compte des versions
         - Début pour les liaisons doubles
         - Optimisation
 
+=> VERSION 5
+    -> Version 5.0 Victor
+        - Liaisons doubles, triples, etc
+        - Factorisation du code avec une nouvelle fonction
+        - Visuel sur l'atome sélectionné avec un contour jaune
+
 
 ==================== main.py ====================
 '''
@@ -146,7 +152,7 @@ else :
     tick = 0
 
 # Test pour une molécule de CH2O (chaque ligne est un atome)
-atoms = [{"id" : 1, "name" : "C", "pos" : (702, 493), "links" : [(2, 2), (3, 1), (4, 1)]},
+atoms = [{"id" : 1, "name" : "C", "pos" : (702, 493), "links" : [(2, 4), (3, 1), (4, 1)]},
           {"id" : 2, "name" : "O", "pos" : (376, 430), "links" : [(1, 2)]},
           {"id" : 3, "name" : "H", "pos" : (868, 631), "links" : [(1, 1)]},
           {"id" : 4, "name" : "H", "pos" : (684, 314), "links" : [(1, 1)]}]
@@ -156,9 +162,10 @@ BLACK = (0, 0, 0)
 DARK_GREY = (100, 100, 100)
 LIGHT_GREY = (200, 200, 200)
 WHITE = (255, 255, 255)
-YELLOW = (200, 200, 0)
+YELLOW = (230, 230, 0)
 
 mouse_pressed = False
+selected_atom = 1
 
 # ----- Initialisation de pygame et création de la fenêtre -----
 
@@ -365,13 +372,40 @@ def game():
     if button((20, 20, 180, 50), "Quitter", BLACK, 30, LIGHT_GREY, WHITE):
         menu = "level select"
     
+    selected_atom = 1
     display_atoms(atoms)
+
 
 def scaling(pos : tuple) -> tuple[int, int] :
     '''Prend une paire de coordonnées et la renvoie après l'avoir mise à l'échelle'''
     x = int(pos[0]*SCALE)
     y = int(pos[1]*SCALE)
     return (x, y)
+
+
+def lines_moved(spacing : float, s : object, p, p2) -> None :
+    '''Utile uniquement pour la fonction display_atoms(), pour gagner de la place, vu la répétition'''
+    size = int(s*SCALE)
+    
+    # Kalkuls matématik (pas du tout copiés du professeur, voyons...)
+    
+    vect_x = p[0]-p2[0]
+    vect_y = p[1]-p2[1]
+    
+    truc = (spacing*sqrt(vect_x**2+vect_y**2)) # jsp comment nommer la variable j'ai plus d'inspi
+    # spacing est en unité cheloue, mais en gros plus c'est petit, plus les lignes s'écartent du centre
+     
+    x = p[0]+(vect_y/truc)
+    y = p[1]+(vect_x/truc)
+    x2 = p2[0]+(vect_y/truc)
+    y2 = p2[1]+(vect_x/truc)
+    pg.draw.line(surface, LIGHT_GREY, scaling((x, y)), scaling((x2, y2)), size)
+    
+    x = p[0]-(vect_y/truc)
+    y = p[1]-(vect_x/truc)
+    x2 = p2[0]-(vect_y/truc)
+    y2 = p2[1]-(vect_x/truc)
+    pg.draw.line(surface, LIGHT_GREY, scaling((x, y)), scaling((x2, y2)), size)
 
 
 def display_atoms(a : list) -> None :
@@ -382,23 +416,32 @@ def display_atoms(a : list) -> None :
         for j in a[i]["links"] :
             if a.index(find_in_dlist(atoms, "id", j[0])) > i :
                 p2 = find_in_dlist(atoms, "id", j[0])["pos"]
-                if j[1] == 1 :
-                    pg.draw.line(surface, LIGHT_GREY, scaling(p), scaling(p2), 10)
-                elif j[1] == 2 :
-                    # Kalkuls matématik
-                    vect_x = p[0]-p2[0]
-                    vect_y = p[1]-p2[1]
-                    x = p[0]+(vect_y/(0.1*sqrt(vect_x**2+vect_y**2)))
-                    y = p[1]+(vect_x/(0.1*sqrt(vect_x**2+vect_y**2)))
+                
+                if j[1] == 1 : # Liaison simple
+                    pg.draw.line(surface, LIGHT_GREY, scaling(p), scaling(p2), int(10*SCALE))
                     
-                    x2 = p2[0]+(vect_y/(0.1*sqrt(vect_x**2+vect_y**2)))
-                    y2 = p2[1]+(vect_x/(0.1*sqrt(vect_x**2+vect_y**2)))
-                                    
-                    pg.draw.line(surface, LIGHT_GREY, scaling((x, y)), scaling((x2, y2)), 10)
-                elif j[1] == 3 :
-                    pg.draw.line(surface, LIGHT_GREY, scaling(p), scaling(p2), 10)
-                elif j[1] == 4 :
-                    pg.draw.line(surface, LIGHT_GREY, scaling(p), scaling(p2), 10)
+                elif j[1] == 2 : # Liaison double
+                    size = 8.5
+                    spacing = 0.1
+                    
+                    lines_moved(spacing, size, p, p2)
+                    
+                elif j[1] == 3 : # Liaison triple
+                    size = 7
+                    spacing = 0.07
+                    
+                    lines_moved(spacing, size, p, p2)
+                    
+                    pg.draw.line(surface, LIGHT_GREY, scaling(p), scaling(p2), size)
+                    
+                elif j[1] == 4 : # Liaison quadruple
+                    size = 6
+                    
+                    spacing = 0.05
+                    lines_moved(spacing, size, p, p2)
+                    
+                    spacing = 0.15
+                    lines_moved(spacing, size, p, p2)
             
             
     for i in a : # pour chaque atome
@@ -406,6 +449,8 @@ def display_atoms(a : list) -> None :
         p = i["pos"]
         pg.draw.circle(surface, a_info["couleur"], scaling(p), a_info["rayon"]*SCALE)
         print_txt(i["name"], p, a_info["rayon"]*1.3, BLACK, True)
+        if i["id"] == selected_atom :
+            pg.draw.circle(surface, YELLOW, scaling(p), (a_info["rayon"]+10)*SCALE, 5) # Contour quand sélectionné
 
     
     print_txt("Debug : mousepos=" + str(pg.mouse.get_pos()), (600, 750), 30, WHITE, True)
@@ -487,6 +532,7 @@ while running == True :
 
 pg.font.quit()
 pg.quit()
+
 
 
 
