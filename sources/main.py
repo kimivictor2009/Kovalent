@@ -1,20 +1,19 @@
 # Projet : Kovalent
-# Auteurs : Victor, Kimi ("KVTeam") et Noé
+# Auteurs : Victor, Kimi ("NKVTeam") et surtout Noé
 
 '''
 ==================== KOVALENT ====================
 
 Bandeau d'informations - tenir à jour !
 
-Version : jsp
+Version : 3.5.2
 
-# Dernière édition : Kimi, 16/03/2026, 19:25
+# Dernière édition : Noé, 17/03/2026, 11:55
 
 
 ---------- COMMENTAIRE ----------
 
-le mouse pressed je pense il marche pas prcq de ce que j'ai compris c'est toujours le meme bouton eft ou jsp quoi
-sinon ya du json importé
+J'ai reglé le probleme grace a mon booléen toute dernière génération les gars y a plus de problèmes avec le bouton jouer 
 
 
 ---------- NOTES ----------
@@ -82,9 +81,10 @@ sinon ya du json importé
 => VERSION 3.5 Kimi
     -> Version jsp.0
         -niveau et atomes importés
-=> VERSION 3.5.1 Noé
+=> VERSION 3.5.2 Noé
     -> Règles de jeu rédigé 
         -et affichées
+    -> J'ai reglé le problème avec le bouton jouer
 
 ==================== main.py ====================
 '''
@@ -221,11 +221,17 @@ def print_txt(text : str, pos : tuple, size : int = 30, color : tuple = WHITE, c
 
 # -----<===== FONCTIONS PRINCIPALES =====>-----
 
-def click() -> bool :#kimi
-    '''renvoie True si on clique gauche, sinon False'''
+def click() -> bool:
+    global mouse_pressed
     
-    click_state = pg.mouse.get_pressed()[0] 
-    return click_state
+    if pg.mouse.get_pressed()[0]:
+        if not mouse_pressed:
+            mouse_pressed = True
+            return True
+    else:
+        mouse_pressed = False
+    
+    return False
 
 
 def render() -> None :
