@@ -74,13 +74,17 @@ sinon ya du json importé
 => VERSION 3
     -> Version 3.0 Noé
         - Ajout du menu de sélection des niveaux
-        - Boutons de sélection
+        - Boutons de sélection des niveaux
+        - Création de la fonction "game"
         - Menu de jeu basique
     -> Version 3.1 Noé, Victor
         - Correction et relecture
-=> VERSION jsp Kimi
+=> VERSION 3.5 Kimi
     -> Version jsp.0
         -niveau et atomes importés
+=> VERSION 3.5.1 Noé
+    -> Règles de jeu rédigé 
+        -et affichées
 
 ==================== main.py ====================
 '''
@@ -105,7 +109,7 @@ with open('data/atome.json', 'r',encoding="utf-8") as fichier:
 # ----- Couleurs, constantes et variables/tableaux/autres -----
 current_level = 0
 fenetre_basique = True
-skip_intro = True
+skip_intro = False
 default_font = True
 mouse_pressed = False
 
@@ -257,7 +261,7 @@ def intro() -> None :
     elif tick >= 170 :
         surface.fill(BLACK)
         teinte = (1-((tick-170)/30))*255
-        print_txt("KVTeam", (600, 350), 50, (teinte, teinte, teinte), True)
+        print_txt("NKVTeam", (600, 350), 50, (teinte, teinte, teinte), True)
 
 
 def main_menu() -> None :
@@ -282,7 +286,12 @@ def rules() -> None :
     surface.fill(DARK_GREY)
     
     print_txt("Règles du jeu", (600, 100), 70, WHITE, True)
-    
+    print_txt("Assembler correctement des atomes pour créer des molécules stables.", (600, 200), 30, WHITE, True)
+    print_txt("En prenant en compte les différentes liaisons", (600, 250), 30, WHITE, True)
+    print_txt("Fin de partie", (600, 350), 40, WHITE, True)
+    print_txt("La partie se termine quand il n’y a plus d’atome", (600, 425), 30, WHITE, True)
+    print_txt("ET", (600, 480), 30, WHITE, True)
+    print_txt("quand la molécule est formée", (600, 535), 30, WHITE, True)
     if button((50, 650, 300, 100), "Retour", BLACK, 60, LIGHT_GREY, WHITE) :
         menu = "main"
 
@@ -387,7 +396,6 @@ while running == True :
 
 pg.font.quit()
 pg.quit()
-
 
 
 
