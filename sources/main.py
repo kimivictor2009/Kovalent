@@ -1,20 +1,21 @@
 # Projet : Kovalent
-# Auteurs : Victor, Kimi ("NKVTeam") et surtout Noé
+# Auteurs : Victor, Kimi ("NKVTeam") et Noé
 
 '''
 ==================== KOVALENT ====================
 
 Bandeau d'informations - tenir à jour !
 
-Version : 3.5.2
+Version : 4.2
 
-# Dernière édition : Noé, 17/03/2026, 11:55
+Dernière édition : Victor, 17/03/2026, 13:46
 
 
 ---------- COMMENTAIRE ----------
 
-J'ai reglé le probleme grace a mon booléen toute dernière génération les gars y a plus de problèmes avec le bouton jouer 
-
+Problème : les couleurs sont dégeulasse
+Merci Kimi de régler ça
+D'ailleurs on s'était gourré dans le compte des versions
 
 ---------- NOTES ----------
 
@@ -78,13 +79,23 @@ J'ai reglé le probleme grace a mon booléen toute dernière génération les ga
         - Menu de jeu basique
     -> Version 3.1 Noé, Victor
         - Correction et relecture
-=> VERSION 3.5 Kimi
-    -> Version jsp.0
-        -niveau et atomes importés
-=> VERSION 3.5.2 Noé
-    -> Règles de jeu rédigé 
-        -et affichées
-    -> J'ai reglé le problème avec le bouton jouer
+        
+=> VERSION 4
+    -> Version 4.0 Kimi
+        - création du Json
+        - niveau et atomes importés
+    -> Version 4.1 Noé
+        - Règles de jeu rédigées
+        - et affichées
+        - J'ai reglé le problème avec le bouton jouer
+    -> Version 4.2 Victor
+        - Début du module atomes avec un affichage des atomes
+        - Convertissage du dict[list[dict]] json_atome en list[dict] car plus simple et pratique
+        - Fonction pour chercher un dictionnaire avec une clé avec une certaine valeur dans une liste
+            pour chercher les infos sur l'atome à afficher
+        - La couleur dans json_atome est en string et pas en tuple[int, int, int] donc
+            formatage des dict de la liste pour afficher les atomes dans la bonne couleur
+
 
 ==================== main.py ====================
 '''
@@ -99,19 +110,46 @@ import pygame as pg
 import json
 #from screeninfo import get_monitors
 
-#-----Fichier json importés-----
+# ----- Fichiers json importés -----
+
 #kimi
+
 with open('data/niveau.json', 'r',encoding="utf-8") as file:
-    json_niveau = json.load(file)#importe le dict json sous le nom de json_niveau
+    json_niveau = json.load(file) # importe le dict json sous le nom de json_niveau
 with open('data/atome.json', 'r',encoding="utf-8") as fichier:
-    json_atome = json.load(fichier)#importe le dict json sous le nom de json_atome
+    json_atome = json.load(fichier) # importe le dict json sous le nom de json_atome
+
+json_atome = json_atome["atome"] #maintenant c'est plus un dict c'est une list
+
+
+# FORMATAGE DES COULEURS (j'ai brain)
+# str -> tuple(int, int, int)
+# Victor
+
+for i in range(len(json_atome)-1) :
+    c = json_atome[i]["couleur"] # donc prend une valeur genre '(255, 255, 255)' mais en str
+    #print(c)
+    # il faut la convertir en tuple
+    result = [0, 0, 0]
+    temp = ""
+    no = 0
+    for j in range(1, len(c)-2) : # on ne parcoure pas les ()
+        if c[j] == "," :
+            result[no] = int(temp)
+            no += 1
+            temp = ""
+        elif c[j] != " " : # c'est ni une virgule, ni un espace, c'est un chiffre !
+            temp += c[j]
+
+    json_atome[i]["couleur"] = (result[0], result[1], result[2])
+
 
 # ----- Couleurs, constantes et variables/tableaux/autres -----
+
 current_level = 0
 fenetre_basique = True
-skip_intro = False
+skip_intro = True
 default_font = True
-mouse_pressed = False
 
 if skip_intro :
     tick = 200
@@ -119,10 +157,10 @@ else :
     tick = 0
 
 # Test pour une molécule de CH2O (chaque ligne est un atome)
-atoms = [{"id" : 1, "name" : "C", "pos" : (127, 208), "links" : [(2, 2), (3, 1), (4, 1)]},
-          {"id" : 2, "name" : "O", "pos" : (94, 215), "links" : [(1, 2)]},
-          {"id" : 3, "name" : "H", "pos" : (131, 249), "links" : [(1, 1)]},
-          {"id" : 4, "name" : "H", "pos" : (134, 157), "links" : [(1, 1)]}]
+atoms = [{"id" : 1, "name" : "C", "pos" : (508, 416), "links" : [(2, 2), (3, 1), (4, 1)]},
+          {"id" : 2, "name" : "O", "pos" : (376, 430), "links" : [(1, 2)]},
+          {"id" : 3, "name" : "H", "pos" : (524, 498), "links" : [(1, 1)]},
+          {"id" : 4, "name" : "H", "pos" : (536, 314), "links" : [(1, 1)]}]
 
 
 BLACK = (0, 0, 0)
@@ -130,6 +168,8 @@ DARK_GREY = (100, 100, 100)
 LIGHT_GREY = (200, 200, 200)
 WHITE = (255, 255, 255)
 YELLOW = (200, 200, 0)
+
+mouse_pressed = False
 
 # ----- Initialisation de pygame et création de la fenêtre -----
 
@@ -254,6 +294,7 @@ def render() -> None :
         elif menu == "game": 
             game()
 
+
 def intro() -> None :
     '''Fait une intro des ticks 0 à 200'''
     if tick < 20 :
@@ -329,12 +370,33 @@ def game():
     global menu
     surface.fill((60, 60, 60)) 
     
-    
-    print_txt("NIVEAU " + str(current_level), (525, 100), 50, WHITE, True)
+    print_txt("NIVEAU " + str(current_level), (600, 100), 50, WHITE, True)
 
-    
     if button((20, 20, 180, 50), "Quitter", BLACK, 30, LIGHT_GREY, WHITE):
         menu = "level select"
+    
+    display_atoms(atoms)
+
+
+def display_atoms(a : list) -> None :
+    '''Affiche les atomes de la liste entrée'''
+    
+    for i in a : # dessine les atomes
+        a_info = find_in_dlist(json_atome, "symbole", i["name"])
+        p = i["pos"]
+        pg.draw.circle(surface, a_info["couleur"], (p[0]*SCALE, p[1]*SCALE), a_info["rayon"]*SCALE)
+        print_txt(i["name"], p, a_info["rayon"]*1.3, BLACK, True)
+    
+    print_txt("Debug : mousepos=" + str(pg.mouse.get_pos()), (600, 750), 30, WHITE, True)
+
+
+def find_in_dlist(t : list[dict], key : str, value : object) -> dict :
+    '''Recherche dans t le premier dictionnaire avec une clef d'une certaine valeur'''
+    r = {}
+    for i in t :
+        if i[key] == value :
+            r = i
+    return r
 
 
 def button(rect : tuple, text : str, text_color : tuple, text_size : int, color : tuple, color2 : tuple) -> bool :
@@ -354,7 +416,7 @@ def button(rect : tuple, text : str, text_color : tuple, text_size : int, color 
     if mpx >= rleft*SCALE and mpy >= rtop*SCALE and mpx <= (rleft + rwidth)*SCALE and mpy <= (rtop + rheight)*SCALE :
         pg.draw.rect(surface, color2, (rleft*SCALE, rtop*SCALE, rwidth*SCALE, rheight*SCALE))
         print_txt(text, ((rleft + (rwidth/2)), (rtop + (rheight/2))), text_size, text_color, True)
-        if click() :# click gauche
+        if click() : # click gauche
             #print("truc")
             return True   
         else :
@@ -366,7 +428,7 @@ def button(rect : tuple, text : str, text_color : tuple, text_size : int, color 
         return False
     
     
-    
+print(json_atome)
 
 # -----<===== BOUCLE PRINCIPALE =====>-----
 
