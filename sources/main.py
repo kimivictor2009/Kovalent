@@ -6,15 +6,14 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 5.0
+Version : 7.0
 
-Dernière édition : Noé, 18/03/2026, 16:00
+Dernière édition : Kimi, 18/03/2026, 17h01
 
 
 ---------- COMMENTAIRE ----------
 
-Si vous faites un truc, JE VOUS ENCULE JE ME LA BUTTE DESSUS ;)
-                    Noé
+voir version 7
 
 ---------- NOTES ----------
 
@@ -110,6 +109,13 @@ Si vous faites un truc, JE VOUS ENCULE JE ME LA BUTTE DESSUS ;)
         - Déplacement des atomes
         - Modification de la fonction game
         - Création de la fonction"trouver_atome_avec_souris"
+
+=> VERSION 7
+-> Version 7.0 Kimi
+        -Niveau avec des infos sur chaque niveau(voir level_info)
+        -Click droit pris en charge(voir click_droit)
+        -Fonction permettant de creer des une liste de dictionnaire sur le modele choisis
+         (voir create_id_for_each_atoms)(pour la molecule du niv 50 ça fait dans les 4000 caracteres :D)
         
 ==================== main.py ====================
 '''
@@ -170,6 +176,7 @@ WHITE = (255, 255, 255)
 YELLOW = (230, 230, 0)
 
 mouse_pressed = False
+mouse_pressed_droit = False
 selected_atom = 1
 en_deplacement = False
 id_atome_deplace = None
@@ -276,6 +283,18 @@ def click() -> bool:
     
     return False
 
+def click_droit() -> bool:
+    global mouse_pressed_droit
+    
+    if pg.mouse.get_pressed()[1]:
+        if not mouse_pressed_droit:
+            mouse_pressed_droit = True
+            return True
+    else:
+        mouse_pressed_droit = False
+    
+    return False
+
 
 def render() -> None :
     '''Affiche tout ce qu'il faut afficher à l'écran'''
@@ -294,7 +313,8 @@ def render() -> None :
             level_select()
         elif menu == "rules" :
             rules()
-        elif menu == "game": 
+        elif menu == "game":
+            
             game()
 
 
@@ -374,8 +394,8 @@ def game():
     global menu, atome_selectionne, en_deplacement, id_atome_deplace
     
     surface.fill((60, 60, 60)) 
-    print_txt("NIVEAU " + str(current_level), (600, 100), 50, WHITE, True)
-
+    level_info(current_level)
+    create_id_for_each_atoms(current_level)
     if button((20, 20, 180, 50), "Quitter", BLACK, 30, LIGHT_GREY, WHITE):
         menu = "level select"
         en_deplacement = False # Sécu
@@ -546,9 +566,41 @@ def button(rect : tuple, text : str, text_color : tuple, text_size : int, color 
     
 
 
-print(json_atome)
+#print(json_niveau[0]['atomes'][0])
 
-
+def level_info(current_level:int)->None:
+    """Affiche les infos du level"""
+    nom = json_niveau[current_level-1]['nom']
+    f_brute = json_niveau[current_level-1]['formule brute']
+    print_txt("NIVEAU " + str(current_level), (600, 100), 50, WHITE, True)
+    print_txt(str(nom), (600, 150), 30, WHITE, True)
+    print_txt(str(f_brute), (600, 180), 30, WHITE, True)
+    
+def create_id_for_each_atoms(current_level:int)->list:
+    """crée un id pour chaque atomes"""
+    atom_list = json_niveau[current_level-1]['atomes']
+    atom_id_list = ['']*len(atom_list)
+    for i in range(len(atom_list)) :
+        if atom_list[i]=='H':
+            valence = json_atome[0]['valence']
+        elif atom_list[i]=='C':
+            valence = json_atome[1]['valence']
+        elif atom_list[i]=='O':
+            valence = json_atome[2]['valence']
+        elif atom_list[i]=='N':
+            valence = json_atome[3]['valence']
+        elif atom_list[i]=='Cl':
+            valence = json_atome[4]['valence']
+        elif atom_list[i]=='F':
+            valence = json_atome[5]['valence']
+        elif atom_list[i]=='S':
+            valence = json_atome[6]['valence']
+        elif atom_list[i]=='P':
+            valence = json_atome[7]['valence']
+        atom_id_list[i]={"id":int(i+1),"name":str(atom_list[i]),"pos" : (500,500), "links": ['']*valence}
+    return atom_id_list
+    
+        
 # -----<===== BOUCLE PRINCIPALE =====>-----
 
 menu = "main"
@@ -583,7 +635,6 @@ while running == True :
 
 pg.font.quit()
 pg.quit()
-
 
 
 
