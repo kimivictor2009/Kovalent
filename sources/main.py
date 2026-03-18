@@ -6,9 +6,9 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 7.0
+Version : 7.1
 
-Dernière édition : Kimi, 18/03/2026, 17h01
+Dernière édition : Victor, 18/03/2026, 19h31
 
 
 ---------- COMMENTAIRE ----------
@@ -111,11 +111,13 @@ voir version 7
         - Création de la fonction"trouver_atome_avec_souris"
 
 => VERSION 7
--> Version 7.0 Kimi
-        -Niveau avec des infos sur chaque niveau(voir level_info)
-        -Click droit pris en charge(voir click_droit)
-        -Fonction permettant de creer des une liste de dictionnaire sur le modele choisis
-         (voir create_id_for_each_atoms)(pour la molecule du niv 50 ça fait dans les 4000 caracteres :D)
+    -> Version 7.0 Kimi
+        - Niveau avec des infos sur chaque niveau(voir level_info)
+        - Click droit pris en charge(voir click_droit)
+        - Fonction permettant de creer des une liste de dictionnaire sur le modele choisis
+          (voir create_id_for_each_atoms)(pour la molecule du niv 50 ça fait dans les 4000 caracteres :D)
+    -> Version 7.1 Victor
+        - Correction d'un bug avec les liaisons
         
 ==================== main.py ====================
 '''
@@ -163,7 +165,7 @@ else :
     tick = 0
 
 # Test pour une molécule de CH2O (chaque ligne est un atome)
-atoms = [{"id" : 1, "name" : "C", "pos" : (702, 493), "links" : [(2, 4), (3, 1), (4, 1)]},
+atoms = [{"id" : 1, "name" : "C", "pos" : (702, 493), "links" : [(2, 2), (3, 1), (4, 1)]},
           {"id" : 2, "name" : "O", "pos" : (376, 430), "links" : [(1, 2)]},
           {"id" : 3, "name" : "H", "pos" : (868, 631), "links" : [(1, 1)]},
           {"id" : 4, "name" : "H", "pos" : (684, 314), "links" : [(1, 1)]}]
@@ -181,6 +183,8 @@ selected_atom = 1
 en_deplacement = False
 id_atome_deplace = None
 atome_selectionne = 1
+
+
 # ----- Initialisation de pygame et création de la fenêtre -----
 
 
@@ -396,6 +400,7 @@ def game():
     surface.fill((60, 60, 60)) 
     level_info(current_level)
     create_id_for_each_atoms(current_level)
+    
     if button((20, 20, 180, 50), "Quitter", BLACK, 30, LIGHT_GREY, WHITE):
         menu = "level select"
         en_deplacement = False # Sécu
@@ -406,7 +411,7 @@ def game():
 
     if click(): # Si on clique
         cible = trouver_atome_avec_souris(atoms)
-        if cible is not None:
+        if cible != None :
             atome_selectionne = cible 
             id_atome_deplace = cible
             en_deplacement = True
@@ -417,7 +422,7 @@ def game():
         id_atome_deplace = None
 
     # Mise à jour de la position
-    if en_deplacement and id_atome_deplace is not None:
+    if en_deplacement and id_atome_deplace != None:
         for atome in atoms:
             if atome["id"] == id_atome_deplace:
                 # IMPORTANT  on divise par SCALE == SUPER CHIANT MERCI VICTOR
@@ -449,19 +454,19 @@ def lines_moved(spacing : float, s : object, p, p2) -> None :
     # spacing est en unité cheloue, mais en gros plus c'est petit, plus les lignes s'écartent du centre
      
     x = p[0]+(vect_y/truc)
-    y = p[1]+(vect_x/truc)
+    y = p[1]-(vect_x/truc)
     x2 = p2[0]+(vect_y/truc)
-    y2 = p2[1]+(vect_x/truc)
+    y2 = p2[1]-(vect_x/truc)
     pg.draw.line(surface, LIGHT_GREY, scaling((x, y)), scaling((x2, y2)), size)
     
     x = p[0]-(vect_y/truc)
-    y = p[1]-(vect_x/truc)
+    y = p[1]+(vect_x/truc)
     x2 = p2[0]-(vect_y/truc)
-    y2 = p2[1]-(vect_x/truc)
+    y2 = p2[1]+(vect_x/truc)
     pg.draw.line(surface, LIGHT_GREY, scaling((x, y)), scaling((x2, y2)), size)
 
 
-def trouver_atome_avec_souris(liste_atomes: list) -> int | None:
+def trouver_atome_avec_souris(liste_atomes: list) -> int | None :
     '''Renvoie l'ID de l'atome ou None si vide'''
     mx, my = pg.mouse.get_pos()
     for atome in liste_atomes:
