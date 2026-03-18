@@ -105,7 +105,7 @@ voir version 7
         - Factorisation du code avec une nouvelle fonction
         - Visuel sur l'atome sélectionné avec un contour jaune
 => VERSION 6
--> Version 6.0 Noé
+    -> Version 6.0 Noé
         - Déplacement des atomes
         - Modification de la fonction game
         - Création de la fonction"trouver_atome_avec_souris"
