@@ -8,12 +8,13 @@ Bandeau d'informations - tenir à jour !
 
 Version : 5.0
 
-Dernière édition : Victor, 17/03/2026, 19:18
+Dernière édition : Noé, 18/03/2026, 16:00
 
 
 ---------- COMMENTAIRE ----------
 
-Si vous faites un truc, vérifiez que c'est pas déjà fait ;)
+Si vous faites un truc, JE VOUS ENCULE JE ME LA BUTTE DESSUS ;)
+                    Noé
 
 ---------- NOTES ----------
 
@@ -104,8 +105,12 @@ Si vous faites un truc, vérifiez que c'est pas déjà fait ;)
         - Liaisons doubles, triples, etc
         - Factorisation du code avec une nouvelle fonction
         - Visuel sur l'atome sélectionné avec un contour jaune
-
-
+=> VERSION 6
+-> Version 6.0 Noé
+        - Déplacement des atomes
+        - Modification de la fonction game
+        - Création de la fonction"trouver_atome_avec_souris"
+        
 ==================== main.py ====================
 '''
 
@@ -166,7 +171,9 @@ YELLOW = (230, 230, 0)
 
 mouse_pressed = False
 selected_atom = 1
-
+en_deplacement = False
+id_atome_deplace = None
+atome_selectionne = 1
 # ----- Initialisation de pygame et création de la fenêtre -----
 
 
@@ -364,16 +371,42 @@ def level_select() :
 
 def game():
     '''Affiche l'écran du niveau sélectionné et le jeu'''
-    global menu
-    surface.fill((60, 60, 60)) 
+    global menu, atome_selectionne, en_deplacement, id_atome_deplace
     
+    surface.fill((60, 60, 60)) 
     print_txt("NIVEAU " + str(current_level), (600, 100), 50, WHITE, True)
 
     if button((20, 20, 180, 50), "Quitter", BLACK, 30, LIGHT_GREY, WHITE):
         menu = "level select"
-    
-    selected_atom = 1
+        en_deplacement = False # Sécu
+
+    # LOGIQUE
+    mx, my = pg.mouse.get_pos()
+    clic_gauche_enfonce = pg.mouse.get_pressed()[0]
+
+    if click(): # Si on clique
+        cible = trouver_atome_avec_souris(atoms)
+        if cible is not None:
+            atome_selectionne = cible 
+            id_atome_deplace = cible
+            en_deplacement = True
+
+    # relâche le bouton
+    if not clic_gauche_enfonce:
+        en_deplacement = False
+        id_atome_deplace = None
+
+    # Mise à jour de la position
+    if en_deplacement and id_atome_deplace is not None:
+        for atome in atoms:
+            if atome["id"] == id_atome_deplace:
+                # IMPORTANT  on divise par SCALE == SUPER CHIANT MERCI VICTOR
+                #mais non je rigole t'étais obligé
+                # en faite jsp si t'étais obligé mais ça marche et c'est bien
+                atome["pos"] = (mx / SCALE, my / SCALE)
+
     display_atoms(atoms)
+    
 
 
 def scaling(pos : tuple) -> tuple[int, int] :
@@ -406,6 +439,24 @@ def lines_moved(spacing : float, s : object, p, p2) -> None :
     x2 = p2[0]-(vect_y/truc)
     y2 = p2[1]-(vect_x/truc)
     pg.draw.line(surface, LIGHT_GREY, scaling((x, y)), scaling((x2, y2)), size)
+
+
+def trouver_atome_avec_souris(liste_atomes: list) -> int | None:
+    '''Renvoie l'ID de l'atome ou None si vide'''
+    mx, my = pg.mouse.get_pos()
+    for atome in liste_atomes:
+        # On récupère les infos de l'atome (rayon) dans le JSON
+        info = find_in_dlist(json_atome, "symbole", atome["name"])
+        rayon_ecran = info["rayon"] * SCALE
+        # Position 
+        ax, ay = scaling(atome["pos"])
+        # Calcul de la distance
+        distance = sqrt((mx - ax)**2 + (my - ay)**2)
+        
+        if distance <= rayon_ecran:
+            return atome["id"]
+    return None
+
 
 
 def display_atoms(a : list) -> None :
@@ -449,8 +500,8 @@ def display_atoms(a : list) -> None :
         p = i["pos"]
         pg.draw.circle(surface, a_info["couleur"], scaling(p), a_info["rayon"]*SCALE)
         print_txt(i["name"], p, a_info["rayon"]*1.3, BLACK, True)
-        if i["id"] == selected_atom :
-            pg.draw.circle(surface, YELLOW, scaling(p), (a_info["rayon"]+10)*SCALE, 5) # Contour quand sélectionné
+        if i["id"] == atome_selectionne :
+            pg.draw.circle(surface, YELLOW, scaling(p), (a_info["rayon"]+10)*SCALE, 5)
 
     
     print_txt("Debug : mousepos=" + str(pg.mouse.get_pos()), (600, 750), 30, WHITE, True)
@@ -532,6 +583,8 @@ while running == True :
 
 pg.font.quit()
 pg.quit()
+
+
 
 
 
