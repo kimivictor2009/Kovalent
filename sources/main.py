@@ -6,9 +6,9 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 7.1
+Version : 7.2
 
-Dernière édition : Victor, 18/03/2026, 19h31
+Dernière édition : Victor, 19/03/2026, 14h57
 
 
 ---------- COMMENTAIRE ----------
@@ -118,6 +118,11 @@ voir version 7
           (voir create_id_for_each_atoms)(pour la molecule du niv 50 ça fait dans les 4000 caracteres :D)
     -> Version 7.1 Victor
         - Correction d'un bug avec les liaisons
+    -> Version 7.1 Victor
+        - Création des atomes selon le niveau
+        - os.sep.join([]) pour compatibilité
+        - disposition des atomes en cercle au départ
+
         
 ==================== main.py ====================
 '''
@@ -131,15 +136,16 @@ from __future__ import annotations
 import pygame as pg
 import json
 from math import *
+import os
 #from screeninfo import get_monitors
 
 # ----- Fichiers json importés -----
 
 #kimi
 
-with open('data/niveau.json', 'r',encoding="utf-8") as file:
+with open(os.sep.join(['data', 'niveau.json']), 'r',encoding="utf-8") as file:
     json_niveau = json.load(file) # importe le dict json sous le nom de json_niveau
-with open('data/atome.json', 'r',encoding="utf-8") as fichier:
+with open(os.sep.join(['data', 'atome.json']), 'r',encoding="utf-8") as fichier:
     json_atome = json.load(fichier) # importe le dict json sous le nom de json_atome
 
 json_atome = json_atome["atome"] # maintenant c'est plus un dict c'est une list
@@ -157,7 +163,7 @@ for i in range(len(json_atome)) :
 current_level = 0
 fenetre_basique = True
 skip_intro = True
-default_font = True
+default_font = True # on abandonne le font, dcp ?
 
 if skip_intro :
     tick = 200
@@ -230,12 +236,16 @@ pg.display.set_caption("Kovalent")
 pg.font.init()
 
 if not default_font :
-    fichier_font = "data/super_font.otf"
+    fichier_font = os.sep.join(["data", "super_font.ttf"])
 else :
+    fichier_font = "freesansbold.ttf"
+
+try :
+    f20 = pg.font.Font(fichier_font, 20)
+except :
     fichier_font = pg.font.get_default_font()
-
-
-f20 = pg.font.Font(fichier_font, 20)
+    f20 = pg.font.Font(fichier_font, 20)
+    
 f25 = pg.font.Font(fichier_font, 25)
 f30 = pg.font.Font(fichier_font, 30)
 f40 = pg.font.Font(fichier_font, 40)
@@ -346,7 +356,7 @@ def main_menu() -> None :
     
     print_txt("KOVALENT", (600, 100), 70, WHITE, True)
     
-    if button((450, 300, 300, 100), "Jouer", BLACK, 60, LIGHT_GREY, WHITE) :
+    if button((450, 300, 300, 100), "Jouer", BLACK, 50, LIGHT_GREY, WHITE) :
         menu = "level select"
     
     if button((400, 500, 400, 100), "Règles du jeu", BLACK, 50, LIGHT_GREY, WHITE) :
@@ -389,7 +399,10 @@ def level_select() :
             if button((x_pos, y_pos, 60, 60), str(num), BLACK, 30, LIGHT_GREY, WHITE):
                 current_level = num # On enregistre le niveau
                 level_info = json_niveau[num-1]
-                menu = "game"       
+                global atoms
+                atoms = create_atoms(current_level)
+                menu = "game"
+                
             num += 1
 
 
@@ -399,7 +412,7 @@ def game():
     
     surface.fill((60, 60, 60)) 
     level_info(current_level)
-    create_id_for_each_atoms(current_level)
+    
     
     if button((20, 20, 180, 50), "Quitter", BLACK, 30, LIGHT_GREY, WHITE):
         menu = "level select"
@@ -575,34 +588,24 @@ def button(rect : tuple, text : str, text_color : tuple, text_size : int, color 
 
 def level_info(current_level:int)->None:
     """Affiche les infos du level"""
+    pg.draw.rect(surface, LIGHT_GREY, (0, 0, 1200*SCALE, 90*SCALE)) # Bandeau supérieur
+    
     nom = json_niveau[current_level-1]['nom']
     f_brute = json_niveau[current_level-1]['formule brute']
-    print_txt("NIVEAU " + str(current_level), (600, 100), 50, WHITE, True)
-    print_txt(str(nom), (600, 150), 30, WHITE, True)
-    print_txt(str(f_brute), (600, 180), 30, WHITE, True)
-    
-def create_id_for_each_atoms(current_level:int)->list:
-    """crée un id pour chaque atomes"""
+    print_txt("NIVEAU " + str(current_level), (1050, 45), 50, BLACK, True)
+    print_txt(str(nom), (600, 30), 30, BLACK, True)
+    print_txt(str(f_brute), (600, 60), 30, BLACK, True)
+
+
+def create_atoms(current_level:int)->list:
+    """crée chaque atome"""
     atom_list = json_niveau[current_level-1]['atomes']
     atom_id_list = ['']*len(atom_list)
+    #print(atom_list)
     for i in range(len(atom_list)) :
-        if atom_list[i]=='H':
-            valence = json_atome[0]['valence']
-        elif atom_list[i]=='C':
-            valence = json_atome[1]['valence']
-        elif atom_list[i]=='O':
-            valence = json_atome[2]['valence']
-        elif atom_list[i]=='N':
-            valence = json_atome[3]['valence']
-        elif atom_list[i]=='Cl':
-            valence = json_atome[4]['valence']
-        elif atom_list[i]=='F':
-            valence = json_atome[5]['valence']
-        elif atom_list[i]=='S':
-            valence = json_atome[6]['valence']
-        elif atom_list[i]=='P':
-            valence = json_atome[7]['valence']
-        atom_id_list[i]={"id":int(i+1),"name":str(atom_list[i]),"pos" : (500,500), "links": ['']*valence}
+        valence = find_in_dlist(json_atome, "symbole", atom_list[i])["valence"]
+        atom_id_list[i]={"id":int(i+1),"name":str(atom_list[i]), "pos" : ((600+cos(360/len(atom_list)*i)*350)*SCALE,(600+sin(360/len(atom_list)*i)*250)*SCALE), "links": []}
+    print(atom_id_list)
     return atom_id_list
     
         
@@ -640,6 +643,21 @@ while running == True :
 
 pg.font.quit()
 pg.quit()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
