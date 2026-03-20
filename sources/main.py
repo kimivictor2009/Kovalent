@@ -6,9 +6,9 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 7.2
+Version : 7.3
 
-Dernière édition : Victor, 19/03/2026, 14h57
+Dernière édition : Victor, 20/03/2026, 17h57
 
 
 ---------- COMMENTAIRE ----------
@@ -112,16 +112,23 @@ voir version 7
 
 => VERSION 7
     -> Version 7.0 Kimi
-        - Niveau avec des infos sur chaque niveau(voir level_info)
+        - Niveau avec des infos sur chaque niveau (voir level_info)
         - Click droit pris en charge(voir click_droit)
         - Fonction permettant de creer des une liste de dictionnaire sur le modele choisis
           (voir create_id_for_each_atoms)(pour la molecule du niv 50 ça fait dans les 4000 caracteres :D)
     -> Version 7.1 Victor
         - Correction d'un bug avec les liaisons
-    -> Version 7.1 Victor
+    -> Version 7.2 Victor
         - Création des atomes selon le niveau
         - os.sep.join([]) pour compatibilité
-        - disposition des atomes en cercle au départ
+        - Importation du module math
+        - Disposition des atomes en cercle au départ
+    -> Version 7.3 Victor
+        - Limitation du déplacement des atomes à la zone de jeu
+        - Disposition initiale des atomes en ovale corrigée
+        - Tests pour régler un problème avec screeninfo
+        - Try except pour la taille de la fenêtre
+        - Aucun atome sélectionné au départ
 
         
 ==================== main.py ====================
@@ -137,7 +144,7 @@ import pygame as pg
 import json
 from math import *
 import os
-#from screeninfo import get_monitors
+from screeninfo import get_monitors
 
 # ----- Fichiers json importés -----
 
@@ -161,7 +168,7 @@ for i in range(len(json_atome)) :
 # ----- Couleurs, constantes et variables/tableaux/autres -----
 
 current_level = 0
-fenetre_basique = True
+fenetre_basique = False
 skip_intro = True
 default_font = True # on abandonne le font, dcp ?
 
@@ -188,7 +195,7 @@ mouse_pressed_droit = False
 selected_atom = 1
 en_deplacement = False
 id_atome_deplace = None
-atome_selectionne = 1
+atome_selectionne = 0
 
 
 # ----- Initialisation de pygame et création de la fenêtre -----
@@ -201,18 +208,27 @@ PROP_WINDOW = 1.5  # la proportion de la longueur sur la hauteur
 
 if not fenetre_basique :
     # Parcoure les moniteurs et prend le principal
-    for m in get_monitors() :
-        if m.is_primary : # Le moniteur principal
+    try :
+        for m in get_monitors() :
+            if m.is_primary : # Le moniteur principal
         
-            if (m.height - 150)*1.5 <= m.width : # Si la fenêtre est assez large par rapport à ce qu'on veut si on prend la hauteur en modèle
+                if (m.height - 150)*PROP_WINDOW <= m.width : # Si la fenêtre est assez large par rapport à ce qu'on veut si on prend la hauteur en modèle
             
-                WINDOW_HEIGHT = m.height - 150 # le 150 est une distance entre le bord haut et bas et la fenêtre
-                WINDOW_LENGHT = WINDOW_HEIGHT * PROP_WINDOW
+                    WINDOW_HEIGHT = m.height - 150 # le 150 est une distance entre le bord haut et bas et la fenêtre
+                    WINDOW_LENGHT = WINDOW_HEIGHT * PROP_WINDOW
             
-            else :  # Sinon
+                else :  # Sinon
              
-                WINDOW_LENGHT = m.width - 50
-                WINDOW_HEIGHT = WINDOW_LENGHT / PROP_WINDOW
+                    WINDOW_LENGHT = m.width - 50
+                    WINDOW_HEIGHT = WINDOW_LENGHT / PROP_WINDOW
+    except :
+        print("Erreur ! Le module screeninfo n'a pas fonctionné comme prévu ! Veuillez vérifier la version")
+        print("------------------------------")
+        print("Initialisation du jeu avec une fenêtre de taille prédéfinie...")
+        print("------------------------------")
+    
+        WINDOW_HEIGHT = 700
+        WINDOW_LENGHT = 1050
     
 
 
@@ -328,7 +344,6 @@ def render() -> None :
         elif menu == "rules" :
             rules()
         elif menu == "game":
-            
             game()
 
 
@@ -402,6 +417,8 @@ def level_select() :
                 global atoms
                 atoms = create_atoms(current_level)
                 menu = "game"
+                global atome_selectionne
+                atome_selectionne = 0
                 
             num += 1
 
@@ -435,9 +452,9 @@ def game():
         id_atome_deplace = None
 
     # Mise à jour de la position
-    if en_deplacement and id_atome_deplace != None:
+    if en_deplacement and id_atome_deplace != None :
         for atome in atoms:
-            if atome["id"] == id_atome_deplace:
+            if atome["id"] == id_atome_deplace and my > 150*SCALE and my < 740*SCALE and mx > 60*SCALE and mx < 1140*SCALE :
                 # IMPORTANT  on divise par SCALE == SUPER CHIANT MERCI VICTOR
                 #mais non je rigole t'étais obligé
                 # en faite jsp si t'étais obligé mais ça marche et c'est bien
@@ -542,7 +559,7 @@ def display_atoms(a : list) -> None :
             pg.draw.circle(surface, YELLOW, scaling(p), (a_info["rayon"]+10)*SCALE, 5)
 
     
-    print_txt("Debug : mousepos=" + str(pg.mouse.get_pos()), (600, 750), 30, WHITE, True)
+    #print_txt("Debug : mousepos=" + str(pg.mouse.get_pos()), (600, 750), 30, WHITE, True)
 
 
 def find_in_dlist(t : list[dict], key : str, value : object) -> dict :
@@ -604,9 +621,10 @@ def create_atoms(current_level:int)->list:
     #print(atom_list)
     for i in range(len(atom_list)) :
         valence = find_in_dlist(json_atome, "symbole", atom_list[i])["valence"]
-        atom_id_list[i]={"id":int(i+1),"name":str(atom_list[i]), "pos" : ((600+cos(360/len(atom_list)*i)*350)*SCALE,(600+sin(360/len(atom_list)*i)*250)*SCALE), "links": []}
-    print(atom_id_list)
+        atom_id_list[i]={"id" : int(i+1),"name" : str(atom_list[i]), "pos" : ((600 + cos(radians(360/len(atom_list)*i))*350), (500 + sin(radians(360/len(atom_list)*i))*250)*SCALE), "links": []}
+    #print(atom_id_list)
     return atom_id_list
+
     
         
 # -----<===== BOUCLE PRINCIPALE =====>-----
