@@ -6,9 +6,9 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 8.1
+Version : victor ça marche pas
 
-Dernière édition : Victor, 21/03/2026, 16h27
+Dernière édition : Kimi, 21/03/2026, 22h17
 
 
 ---------- COMMENTAIRE ----------
@@ -18,6 +18,8 @@ Heureusement qu'on oublie les isomères
 Kimi il faudra que tu appelle detect_win() seulement au moment ou on crée une liaison (pour l'optimisation)
 Il ne faudra pas oublier de faire un système de niveau bloqués/débloqués selon la prgression
 Et mon arrière-plan, il est pas un peu stylé ??
+
+regarde discord et puis je coderai pas avec un truc qui fait une triple liason dans un tuple (explique ton code pls)
 
 ---------- NOTES ----------
 
@@ -326,10 +328,10 @@ def click() -> bool:
     
     return False
 
-def click_right() -> bool:
+def right_click() -> bool:
     global mouse_pressed_right
     
-    if pg.mouse.get_pressed()[1]:
+    if pg.mouse.get_pressed()[2]:
         if not mouse_pressed_right:
             mouse_pressed_right = True
             return True
@@ -473,7 +475,7 @@ def level_select() :
 
 def game():
     '''Affiche le jeu'''
-    global menu, selected_atom, moving, moved_atom_id
+    global menu, selected_atom, moving, moved_atom_id, current_level
     
     surface.fill((60, 60, 60)) 
     level_info(current_level)
@@ -486,6 +488,7 @@ def game():
     # LOGIQUE
     mx, my = pg.mouse.get_pos()
     is_clicking = pg.mouse.get_pressed()[0]
+    #is_right_clicking = pg.mouse.get_pressed()[2] sert a rien pour l'instant
 
     if click(): # Si on clique
         move_target = find_atom_under_mouse(atoms)
@@ -493,7 +496,20 @@ def game():
             selected_atom = move_target 
             moved_atom_id = move_target
             moving = True
-
+            print(selected_atom)
+        else :
+            selected_atom = 0
+            print(selected_atom)
+    if right_click() and find_atom_under_mouse(atoms) != None and find_atom_under_mouse(atoms) != selected_atom :#si on clique droit
+        #print(selected_atom, find_atom_under_mouse(atoms))
+        #print(atoms)
+        links_tuple = (selected_atom, find_atom_under_mouse(atoms))
+        #print(links_tuple, links_tuple[0], links_tuple[1])
+        atoms[int(selected_atom-1)]['links'].append(links_tuple)
+        atoms[int(find_atom_under_mouse(atoms)-1)]['links'].append(links_tuple)
+        print(atoms)
+        
+            
     # relâche le bouton
     if not is_clicking:
         moving = False
