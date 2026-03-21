@@ -6,9 +6,9 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 8.0
+Version : 8.1
 
-Dernière édition : Victor, 21/03/2026, 11h18
+Dernière édition : Victor, 21/03/2026, 16h27
 
 
 ---------- COMMENTAIRE ----------
@@ -18,7 +18,6 @@ Heureusement qu'on oublie les isomères
 Kimi il faudra que tu appelle detect_win() seulement au moment ou on crée une liaison (pour l'optimisation)
 Il ne faudra pas oublier de faire un système de niveau bloqués/débloqués selon la prgression
 Et mon arrière-plan, il est pas un peu stylé ??
-
 
 ---------- NOTES ----------
 
@@ -145,6 +144,9 @@ Et mon arrière-plan, il est pas un peu stylé ??
         - Ajout de couleurs correspondant aux difficultés pour les boutons de sélection
         - Indication de la difficulté dans le menu de jeu
         - Ajout d'un arrière-plan pour les menus
+    -> Version 8.1 Victor
+        - Niveau 50 désormais "impossible", en noir
+        - Modif du font
 
 
 ==================== main.py ====================
@@ -226,7 +228,6 @@ selected_atom = 0
 
 # ----- Initialisation de pygame et création de la fenêtre -----
 
-
 WINDOW_HEIGHT = 700
 WINDOW_LENGHT = 1050
 
@@ -273,7 +274,10 @@ pg.init()
 surface = pg.display.set_mode(WINDOW_SIZE)
 pg.display.set_caption("Kovalent")
 
+
 # ----- Fonts -----
+
+prop_txt = 1.5 # change la taille de tous les textes (si on change de police, permet de switcher rapidement)
 
 pg.font.init()
 
@@ -283,15 +287,17 @@ else :
     fichier_font = "freesansbold.ttf"
 
 try :
-    ftest = pg.font.Font(fichier_font, 20) # Si l'import du fichier ne marche pas, on prend celui par défaut
+    ftest = pg.font.SysFont(fichier_font, 20) # Si l'import du fichier ne marche pas, on prend celui par défaut
 except :
     fichier_font = pg.font.get_default_font()
+    print("Échec de l'import de la police de caractère")
+    print("Démarrage avec la police par défaut...")
 
 
 def create_text(text : str, size : int, color : tuple = WHITE) -> pg.Surface :
     '''Renvoie une Surface de texte, à blit pour afficher'''
     
-    font = pg.font.Font(fichier_font, size) # Un peu "laggy" des fois mais c'est pas grave
+    font = pg.font.SysFont(fichier_font, int(size*prop_txt)) # Un peu "laggy" des fois mais c'est pas grave
         
     return font.render(text, True, color)
 
@@ -430,10 +436,10 @@ def level_select() :
                 col = ORANGE
             elif l == 3 :
                 col = RED
-            elif l == 4 :
+            elif l == 4 and i < 9 :
                 col = PURPLE
             else :
-                col = BLACK
+                col = (-150, -150, 150) # Oui je sais on n'a pas le droit de faire des couleurs négatives mais je m'en fous c'est mon projet
                 
             if button((x_pos, y_pos, 60, 60), str(num), BLACK, 30, merge_colors(col, LIGHT_GREY), merge_colors(merge_colors(col, LIGHT_GREY), WHITE)) :
                 
@@ -455,7 +461,7 @@ def level_select() :
                 elif current_level <= 40 :
                     difficulty = "Expert"
                     level_color = RED
-                elif current_level <= 50 :
+                elif current_level <= 49 :
                     difficulty = "Maître"
                     level_color = PURPLE
                 else :
