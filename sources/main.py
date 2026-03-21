@@ -6,14 +6,19 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : 7.3
+Version : 8.0
 
-Dernière édition : Victor, 20/03/2026, 17h57
+Dernière édition : Victor, 21/03/2026, 11h18
 
 
 ---------- COMMENTAIRE ----------
 
-voir version 7
+Déjà le version 8 ! La détection de victoire était un peu trop facile par contre...
+Heureusement qu'on oublie les isomères
+Kimi il faudra que tu appelle detect_win() seulement au moment ou on crée une liaison (pour l'optimisation)
+Il ne faudra pas oublier de faire un système de niveau bloqués/débloqués selon la prgression
+Et mon arrière-plan, il est pas un peu stylé ??
+
 
 ---------- NOTES ----------
 
@@ -30,6 +35,8 @@ voir version 7
     Penser aussi aux docstrings et aux commentaires
     Pas besoin de faire *SCALE pour du texte, la fonction le fait automatiquement
     Pas besoin de scale pour les boutons non plus
+    Y'a beaucoup de fois le nom "Victor" mais c'est parce que je disserte beaucoup sur ce que je fais
+    et je le fais pas en une seule fois du coup ça fait plein de versions
 
 
 ---------- HISTORIQUE DES MODIFICATIONS ----------
@@ -88,10 +95,10 @@ voir version 7
         - J'ai reglé le problème avec le bouton jouer
     -> Version 4.2 Victor
         - Début du module atomes avec un affichage des atomes
-        - Convertissage du dict[list[dict]] json_atome en list[dict] car plus simple et pratique
+        - Convertissage du dict[list[dict]] atoms_data en list[dict] car plus simple et pratique
         - Fonction pour chercher un dictionnaire avec une clé avec une certaine valeur dans une liste
             pour chercher les infos sur l'atome à afficher
-        - La couleur dans json_atome est en string et pas en tuple[int, int, int] donc
+        - La couleur dans atoms_data est en string et pas en tuple[int, int, int] donc
             formatage des dict de la liste pour afficher les atomes dans la bonne couleur
     -> Version 4.3 Victor
         - Fixé le json
@@ -104,6 +111,7 @@ voir version 7
         - Liaisons doubles, triples, etc
         - Factorisation du code avec une nouvelle fonction
         - Visuel sur l'atome sélectionné avec un contour jaune
+
 => VERSION 6
     -> Version 6.0 Noé
         - Déplacement des atomes
@@ -130,7 +138,15 @@ voir version 7
         - Try except pour la taille de la fenêtre
         - Aucun atome sélectionné au départ
 
-        
+=> VERSION 8
+    -> Version 8.0 Victor
+        - Renommage de certaines variables et fonctions en anglais (ça fait plus pro)
+        - Fonction detect_win() qui indique si le joueur a gagné on non
+        - Ajout de couleurs correspondant aux difficultés pour les boutons de sélection
+        - Indication de la difficulté dans le menu de jeu
+        - Ajout d'un arrière-plan pour les menus
+
+
 ==================== main.py ====================
 '''
 
@@ -151,18 +167,18 @@ from screeninfo import get_monitors
 #kimi
 
 with open(os.sep.join(['data', 'niveau.json']), 'r',encoding="utf-8") as file:
-    json_niveau = json.load(file) # importe le dict json sous le nom de json_niveau
+    levels_data = json.load(file) # importe le dict json sous le nom de levels_data
 with open(os.sep.join(['data', 'atome.json']), 'r',encoding="utf-8") as fichier:
-    json_atome = json.load(fichier) # importe le dict json sous le nom de json_atome
+    atoms_data = json.load(fichier) # importe le dict json sous le nom de atoms_data
 
-json_atome = json_atome["atome"] # maintenant c'est plus un dict c'est une list
-json_niveau = json_niveau["niveau"]
+atoms_data = atoms_data["atome"] # maintenant c'est plus un dict c'est une list
+levels_data = levels_data["niveau"]
 
 # Formatage des couleurs
 # Victor
 
-for i in range(len(json_atome)) :
-    json_atome[i]["couleur"] = tuple(json_atome[i]["couleur"])
+for i in range(len(atoms_data)) :
+    atoms_data[i]["couleur"] = tuple(atoms_data[i]["couleur"])
 
 
 # ----- Couleurs, constantes et variables/tableaux/autres -----
@@ -170,7 +186,7 @@ for i in range(len(json_atome)) :
 current_level = 0
 fenetre_basique = False
 skip_intro = True
-default_font = True # on abandonne le font, dcp ?
+default_font = False # on abandonne le font, dcp ?
 
 if skip_intro :
     tick = 200
@@ -189,13 +205,23 @@ DARK_GREY = (100, 100, 100)
 LIGHT_GREY = (200, 200, 200)
 WHITE = (255, 255, 255)
 YELLOW = (230, 230, 0)
+GREEN = (0, 200, 0)
+ORANGE = (200, 100, 0)
+RED = (200, 0, 0)
+PURPLE = (100, 0, 150)
+
+def merge_colors(col1 : tuple, col2 : tuple) -> tuple :
+    '''Produit une couleur moyenne des deux couleurs entrées'''
+    col3 = ((col1[0]+col2[0])/2, (col1[1]+col2[1])/2, (col1[2]+col2[2])/2)
+    return col3
+
+print("\n") # Petit espace dans le shell pour les message d'erreur
 
 mouse_pressed = False
-mouse_pressed_droit = False
-selected_atom = 1
-en_deplacement = False
-id_atome_deplace = None
-atome_selectionne = 0
+mouse_pressed_right = False
+moving = False
+moved_atom_id = None
+selected_atom = 0
 
 
 # ----- Initialisation de pygame et création de la fenêtre -----
@@ -222,7 +248,7 @@ if not fenetre_basique :
                     WINDOW_LENGHT = m.width - 50
                     WINDOW_HEIGHT = WINDOW_LENGHT / PROP_WINDOW
     except :
-        print("Erreur ! Le module screeninfo n'a pas fonctionné comme prévu ! Veuillez vérifier la version")
+        print("Erreur ! Le module screeninfo n'a pas fonctionné comme prévu ! Veuillez vérifier la version (0.8.1) et relancez le programme si besoin.")
         print("------------------------------")
         print("Initialisation du jeu avec une fenêtre de taille prédéfinie...")
         print("------------------------------")
@@ -257,34 +283,15 @@ else :
     fichier_font = "freesansbold.ttf"
 
 try :
-    f20 = pg.font.Font(fichier_font, 20)
+    ftest = pg.font.Font(fichier_font, 20) # Si l'import du fichier ne marche pas, on prend celui par défaut
 except :
     fichier_font = pg.font.get_default_font()
-    f20 = pg.font.Font(fichier_font, 20)
-    
-f25 = pg.font.Font(fichier_font, 25)
-f30 = pg.font.Font(fichier_font, 30)
-f40 = pg.font.Font(fichier_font, 40)
-f50 = pg.font.Font(fichier_font, 50)
-f70 = pg.font.Font(fichier_font, 70)
+
 
 def create_text(text : str, size : int, color : tuple = WHITE) -> pg.Surface :
     '''Renvoie une Surface de texte, à blit pour afficher'''
     
-    if size == 20 :
-        font = f20
-    elif size == 25 :
-        font = f25
-    elif size == 30 :
-        font = f30
-    elif size == 40 :
-        font = f40
-    elif size == 50 :
-        font = f50
-    elif size == 70 :
-        font = f70
-    else :
-        font = pg.font.Font(fichier_font, size) # Très "laggy" de faire celui-là, utilisez une taille déjà faite svp
+    font = pg.font.Font(fichier_font, size) # Un peu "laggy" des fois mais c'est pas grave
         
     return font.render(text, True, color)
 
@@ -313,15 +320,15 @@ def click() -> bool:
     
     return False
 
-def click_droit() -> bool:
-    global mouse_pressed_droit
+def click_right() -> bool:
+    global mouse_pressed_right
     
     if pg.mouse.get_pressed()[1]:
-        if not mouse_pressed_droit:
-            mouse_pressed_droit = True
+        if not mouse_pressed_right:
+            mouse_pressed_right = True
             return True
     else:
-        mouse_pressed_droit = False
+        mouse_pressed_right = False
     
     return False
 
@@ -368,6 +375,7 @@ def main_menu() -> None :
     global menu
     
     surface.fill(DARK_GREY)
+    background()
     
     print_txt("KOVALENT", (600, 100), 70, WHITE, True)
     
@@ -383,6 +391,7 @@ def rules() -> None :
     global menu
     
     surface.fill(DARK_GREY)
+    background()
     
     print_txt("Règles du jeu", (600, 100), 70, WHITE, True)
     print_txt("Assembler correctement des atomes pour créer des molécules stables.", (600, 200), 30, WHITE, True)
@@ -397,9 +406,11 @@ def rules() -> None :
 
 def level_select() :
     '''Affiche le menu de sélection du niveau à jouer'''
-    global menu, current_level
+    global menu, current_level, difficulty, level_color, selected_atom, atoms
     
     surface.fill(DARK_GREY)
+    background()
+    
     print_txt("Sélectionnez un niveau", (600, 80), 70, WHITE, True)
 
     if button((50, 650, 300, 100), "Retour", BLACK, 60, LIGHT_GREY, WHITE):
@@ -411,56 +422,88 @@ def level_select() :
             x_pos = 150 + i * 100 - 30
             y_pos = 200 + l * 90 - 30
             
-            if button((x_pos, y_pos, 60, 60), str(num), BLACK, 30, LIGHT_GREY, WHITE):
+            if l == 0 :
+                col = GREEN
+            elif l == 1 :
+                col = YELLOW
+            elif l == 2 :
+                col = ORANGE
+            elif l == 3 :
+                col = RED
+            elif l == 4 :
+                col = PURPLE
+            else :
+                col = BLACK
+                
+            if button((x_pos, y_pos, 60, 60), str(num), BLACK, 30, merge_colors(col, LIGHT_GREY), merge_colors(merge_colors(col, LIGHT_GREY), WHITE)) :
+                
                 current_level = num # On enregistre le niveau
-                level_info = json_niveau[num-1]
-                global atoms
+                level_info = levels_data[num-1]
                 atoms = create_atoms(current_level)
                 menu = "game"
-                global atome_selectionne
-                atome_selectionne = 0
+                selected_atom = 0
+                                
+                if current_level <= 10 :
+                    difficulty = "Facile"
+                    level_color = GREEN
+                elif current_level <= 20 :
+                    difficulty = "Normal"
+                    level_color = YELLOW
+                elif current_level <= 30 :
+                    difficulty = "Difficile"
+                    level_color = ORANGE
+                elif current_level <= 40 :
+                    difficulty = "Expert"
+                    level_color = RED
+                elif current_level <= 50 :
+                    difficulty = "Maître"
+                    level_color = PURPLE
+                else :
+                    difficulty = "Impossible"
+                    level_color = BLACK
                 
             num += 1
 
 
 def game():
-    '''Affiche l'écran du niveau sélectionné et le jeu'''
-    global menu, atome_selectionne, en_deplacement, id_atome_deplace
+    '''Affiche le jeu'''
+    global menu, selected_atom, moving, moved_atom_id
     
     surface.fill((60, 60, 60)) 
     level_info(current_level)
     
     
-    if button((20, 20, 180, 50), "Quitter", BLACK, 30, LIGHT_GREY, WHITE):
+    if button((15, 15, 190, 60), "Quitter", BLACK, 40, LIGHT_GREY, WHITE):
         menu = "level select"
-        en_deplacement = False # Sécu
+        moving = False # Sécu
 
     # LOGIQUE
     mx, my = pg.mouse.get_pos()
-    clic_gauche_enfonce = pg.mouse.get_pressed()[0]
+    is_clicking = pg.mouse.get_pressed()[0]
 
     if click(): # Si on clique
-        cible = trouver_atome_avec_souris(atoms)
-        if cible != None :
-            atome_selectionne = cible 
-            id_atome_deplace = cible
-            en_deplacement = True
+        move_target = find_atom_under_mouse(atoms)
+        if move_target != None :
+            selected_atom = move_target 
+            moved_atom_id = move_target
+            moving = True
 
     # relâche le bouton
-    if not clic_gauche_enfonce:
-        en_deplacement = False
-        id_atome_deplace = None
+    if not is_clicking:
+        moving = False
+        moved_atom_id = None
 
     # Mise à jour de la position
-    if en_deplacement and id_atome_deplace != None :
+    if moving and moved_atom_id != None :
         for atome in atoms:
-            if atome["id"] == id_atome_deplace and my > 150*SCALE and my < 740*SCALE and mx > 60*SCALE and mx < 1140*SCALE :
+            if atome["id"] == moved_atom_id and my > 150*SCALE and my < 740*SCALE and mx > 60*SCALE and mx < 1140*SCALE :
                 # IMPORTANT  on divise par SCALE == SUPER CHIANT MERCI VICTOR
-                #mais non je rigole t'étais obligé
-                # en faite jsp si t'étais obligé mais ça marche et c'est bien
+                # mais non je rigole t'étais obligé
+                # en fait jsp si t'étais obligé mais ça marche et c'est bien
                 atome["pos"] = (mx / SCALE, my / SCALE)
 
     display_atoms(atoms)
+    print_txt("Debug : mousepos=" + str(pg.mouse.get_pos()) + ", win=" + str(detect_win()), (600, 750), 30, WHITE, True)
     
 
 
@@ -471,7 +514,7 @@ def scaling(pos : tuple) -> tuple[int, int] :
     return (x, y)
 
 
-def lines_moved(spacing : float, s : object, p, p2) -> None :
+def lines_moved(spacing, s, p, p2) -> None : # désolé mais j'ai la flemme de spécifier une fonction qui ne sert qu'une fois
     '''Utile uniquement pour la fonction display_atoms(), pour gagner de la place, vu la répétition'''
     size = int(s*SCALE)
     
@@ -496,12 +539,12 @@ def lines_moved(spacing : float, s : object, p, p2) -> None :
     pg.draw.line(surface, LIGHT_GREY, scaling((x, y)), scaling((x2, y2)), size)
 
 
-def trouver_atome_avec_souris(liste_atomes: list) -> int | None :
+def find_atom_under_mouse(liste_atomes: list) -> int | None :
     '''Renvoie l'ID de l'atome ou None si vide'''
     mx, my = pg.mouse.get_pos()
     for atome in liste_atomes:
         # On récupère les infos de l'atome (rayon) dans le JSON
-        info = find_in_dlist(json_atome, "symbole", atome["name"])
+        info = find_in_dlist(atoms_data, "symbole", atome["name"])
         rayon_ecran = info["rayon"] * SCALE
         # Position 
         ax, ay = scaling(atome["pos"])
@@ -551,15 +594,17 @@ def display_atoms(a : list) -> None :
             
             
     for i in a : # pour chaque atome
-        a_info = find_in_dlist(json_atome, "symbole", i["name"])
+        a_info = find_in_dlist(atoms_data, "symbole", i["name"])
         p = i["pos"]
         pg.draw.circle(surface, a_info["couleur"], scaling(p), a_info["rayon"]*SCALE)
-        print_txt(i["name"], p, a_info["rayon"]*1.3, BLACK, True)
-        if i["id"] == atome_selectionne :
+        if i["name"] == "C" :
+            print_txt(i["name"], p, a_info["rayon"]*1.3, WHITE, True) # Juste pour le carbone, on met le symbole en blanc (vu qu'il est noir)
+        else :
+            print_txt(i["name"], p, a_info["rayon"]*1.3, BLACK, True)
+        if i["id"] == selected_atom :
             pg.draw.circle(surface, YELLOW, scaling(p), (a_info["rayon"]+10)*SCALE, 5)
 
-    
-    #print_txt("Debug : mousepos=" + str(pg.mouse.get_pos()), (600, 750), 30, WHITE, True)
+
 
 
 def find_in_dlist(t : list[dict], key : str, value : object) -> dict :
@@ -601,32 +646,69 @@ def button(rect : tuple, text : str, text_color : tuple, text_size : int, color 
     
 
 
-#print(json_niveau[0]['atomes'][0])
-
 def level_info(current_level:int)->None:
     """Affiche les infos du level"""
     pg.draw.rect(surface, LIGHT_GREY, (0, 0, 1200*SCALE, 90*SCALE)) # Bandeau supérieur
     
-    nom = json_niveau[current_level-1]['nom']
-    f_brute = json_niveau[current_level-1]['formule brute']
-    print_txt("NIVEAU " + str(current_level), (1050, 45), 50, BLACK, True)
-    print_txt(str(nom), (600, 30), 30, BLACK, True)
-    print_txt(str(f_brute), (600, 60), 30, BLACK, True)
+    nom = levels_data[current_level-1]['nom']
+    f_brute = levels_data[current_level-1]['formule brute']
+    print_txt("Niveau " + str(current_level), (1050, 30), 35, BLACK, True)
+    print_txt(difficulty, (1050, 65), 30, level_color, True)
+    print_txt(str(nom), (600, 30), 35, BLACK, True)
+    print_txt(str(f_brute), (600, 65), 30, BLACK, True)
 
 
 def create_atoms(current_level:int)->list:
-    """crée chaque atome"""
-    atom_list = json_niveau[current_level-1]['atomes']
+    """Crée chaque atome"""
+    atom_list = levels_data[current_level-1]['atomes']
     atom_id_list = ['']*len(atom_list)
     #print(atom_list)
     for i in range(len(atom_list)) :
-        valence = find_in_dlist(json_atome, "symbole", atom_list[i])["valence"]
-        atom_id_list[i]={"id" : int(i+1),"name" : str(atom_list[i]), "pos" : ((600 + cos(radians(360/len(atom_list)*i))*350), (500 + sin(radians(360/len(atom_list)*i))*250)*SCALE), "links": []}
+        valence = find_in_dlist(atoms_data, "symbole", atom_list[i])["valence"]
+        atom_id_list[i]={"id" : int(i+1),"name" : str(atom_list[i]), "pos" : ((600 + cos(radians(360/len(atom_list)*i))*350), (450 + sin(radians(360/len(atom_list)*i))*250)), "links": []}
     #print(atom_id_list)
     return atom_id_list
 
+
+def detect_win() -> bool :
+    '''Détecte si le joueur a gagné et renvoie un booléen correspondant
+    Détection simple : on vérifie juste que tous les atomes ont le bon nombre de liaisons
+    Fonction à n'appeler idéalement qu'après la création d'un lien, pour l'optimisation'''
     
+    win = True
+    # Ouais bon en fait c'est plus une détection de défaite
+    for a in atoms :
+        nb_links = 0
+        for i in a["links"] :
+            nb_links += i[1] # Compte le nombre de liens de l'atome a
+            
+        #print(a["name"], nb_links)
+        #print("valence", find_in_dlist(atoms_data, "symbole", a["name"])["valence"])
         
+        if nb_links != find_in_dlist(atoms_data, "symbole", a["name"])["valence"] : # Quand le nombre de liaisons n'est pas le max
+            win = False
+    
+    return win
+            
+ 
+def background() -> None :
+    '''Dessine un arrière plan stylé'''
+    
+    for i in range(5) :
+        modifier = 0.2 + i/15
+        radius = 350 + i*80
+        pt1 = (((600 + cos(radians(90+tick*modifier))*radius), (450 + sin(radians(90+tick*modifier))*radius)))
+        pt2 = (((600 + cos(radians(180+tick*modifier))*radius), (450 + sin(radians(180+tick*modifier))*radius)))
+        pt3 = (((600 + cos(radians(270+tick*modifier))*radius), (450 + sin(radians(270+tick*modifier))*radius)))
+        pt4 = (((600 + cos(radians(tick*modifier))*radius), (450 + sin(radians(tick*modifier))*radius)))
+        
+        pg.draw.lines(surface, (120+i*20, 120+i*20, 120+i*20), True, [scaling(pt1), scaling(pt2), scaling(pt3), scaling(pt4)], int(5*SCALE))
+
+    
+    
+   
+
+
 # -----<===== BOUCLE PRINCIPALE =====>-----
 
 menu = "main"
@@ -650,6 +732,7 @@ while running == True :
     
     #print(menu)
     #print(pg.mouse.get_pressed())
+    #print(levels_data[0]['atomes'][0])
     
     # -----------------
     
@@ -661,6 +744,7 @@ while running == True :
 
 pg.font.quit()
 pg.quit()
+
 
 
 
