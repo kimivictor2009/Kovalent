@@ -6,20 +6,22 @@
 
 Bandeau d'informations - tenir à jour !
 
-Version : victor ça marche pas
+Version : 9.0 mais la version 8 marche pas
 
-Dernière édition : Kimi, 21/03/2026, 22h17
+Dernière édition : Victor, 21/03/2026, 16h27
 
 
 ---------- COMMENTAIRE ----------
 
-Déjà le version 8 ! La détection de victoire était un peu trop facile par contre...
-Heureusement qu'on oublie les isomères
-Kimi il faudra que tu appelle detect_win() seulement au moment ou on crée une liaison (pour l'optimisation)
-Il ne faudra pas oublier de faire un système de niveau bloqués/débloqués selon la prgression
-Et mon arrière-plan, il est pas un peu stylé ??
 
-regarde discord et puis je coderai pas avec un truc qui fait une triple liason dans un tuple (explique ton code pls)
+je pense qu'on le temps pour rajouter des niveaux impossibles au dessus du niveau 50
+et faut que je rajoute des soluces mais jsp comment
+victor ta detection de victoire est OBSOLETE
+et qu'on mette un message de victoire ça peut etre sympatchique
+victor deplace les couleur des niveaux en dehors de la fonction level_select() stp
+et mets LES LEVEL INFO DANS LEVEL INFO (GENRE LA DIFFICULTEE DANS LEVEL INFO)
+on peut mettre une icone au jeu stp prcq dans la barre windows c'est moche
+merci d'avance
 
 ---------- NOTES ----------
 
@@ -150,6 +152,12 @@ regarde discord et puis je coderai pas avec un truc qui fait une triple liason d
         - Niveau 50 désormais "impossible", en noir
         - Modif du font
 
+=> VERSION 9
+    -> Version 9.0 Kimi
+        -creation des liaison limitée selon la valence et le nombre de liaisons presente(voir create link)
+        -ajout du background dans le jeu
+        -ajout d'un bouton niveau suivant qui se debloque seulement quand on gagne
+        -modification brève de la fonction background pour qu'elle soit utilisable avec des couleurs differentes 
 
 ==================== main.py ====================
 '''
@@ -213,6 +221,7 @@ GREEN = (0, 200, 0)
 ORANGE = (200, 100, 0)
 RED = (200, 0, 0)
 PURPLE = (100, 0, 150)
+GRAY = (120, 120, 120)
 
 def merge_colors(col1 : tuple, col2 : tuple) -> tuple :
     '''Produit une couleur moyenne des deux couleurs entrées'''
@@ -383,7 +392,7 @@ def main_menu() -> None :
     global menu
     
     surface.fill(DARK_GREY)
-    background()
+    background(GRAY)
     
     print_txt("KOVALENT", (600, 100), 70, WHITE, True)
     
@@ -399,7 +408,7 @@ def rules() -> None :
     global menu
     
     surface.fill(DARK_GREY)
-    background()
+    background(GRAY)
     
     print_txt("Règles du jeu", (600, 100), 70, WHITE, True)
     print_txt("Assembler correctement des atomes pour créer des molécules stables.", (600, 200), 30, WHITE, True)
@@ -417,7 +426,7 @@ def level_select() :
     global menu, current_level, difficulty, level_color, selected_atom, atoms
     
     surface.fill(DARK_GREY)
-    background()
+    background(GRAY)
     
     print_txt("Sélectionnez un niveau", (600, 80), 70, WHITE, True)
 
@@ -475,16 +484,28 @@ def level_select() :
 
 def game():
     '''Affiche le jeu'''
-    global menu, selected_atom, moving, moved_atom_id, current_level
+    global menu, selected_atom, moving, moved_atom_id, current_level, atoms
     
-    surface.fill((60, 60, 60)) 
+    surface.fill(DARK_GREY)
+    background(level_color)
     level_info(current_level)
     
     
-    if button((15, 15, 190, 60), "Quitter", BLACK, 40, LIGHT_GREY, WHITE):
+    if button((15, 15, 190, 30), "Menu", BLACK, 20, LIGHT_GREY, WHITE):
         menu = "level select"
         moving = False # Sécu
-
+    if detect_win():
+        if button((15, 45, 190, 30), "Niveau suivant", BLACK, 20, LIGHT_GREY, WHITE) :
+            current_level +=1
+            selected_atom=0
+            moving = False
+            moved_atom_id = None
+            atoms=create_atoms(current_level)
+            display_atoms(atoms)
+            moving = False
+    elif not detect_win():
+        if button((15, 45, 190, 30), "Niveau suivant", BLACK, 20, DARK_GREY, DARK_GREY) :
+            moving = False
     # LOGIQUE
     mx, my = pg.mouse.get_pos()
     is_clicking = pg.mouse.get_pressed()[0]
@@ -496,19 +517,12 @@ def game():
             selected_atom = move_target 
             moved_atom_id = move_target
             moving = True
-            print(selected_atom)
+            #print(selected_atom)
         else :
             selected_atom = 0
-            print(selected_atom)
-    if right_click() and find_atom_under_mouse(atoms) != None and find_atom_under_mouse(atoms) != selected_atom :#si on clique droit
-        #print(selected_atom, find_atom_under_mouse(atoms))
-        #print(atoms)
-        links_tuple = (selected_atom, find_atom_under_mouse(atoms))
-        #print(links_tuple, links_tuple[0], links_tuple[1])
-        atoms[int(selected_atom-1)]['links'].append(links_tuple)
-        atoms[int(find_atom_under_mouse(atoms)-1)]['links'].append(links_tuple)
-        print(atoms)
-        
+            #print(selected_atom)
+    
+    create_links()   
             
     # relâche le bouton
     if not is_clicking:
@@ -527,6 +541,79 @@ def game():
     display_atoms(atoms)
     print_txt("Debug : mousepos=" + str(pg.mouse.get_pos()) + ", win=" + str(detect_win()), (600, 750), 30, WHITE, True)
     
+
+
+
+
+def create_links() -> None:#kimi
+    """gère les liaison entre atomes"""
+    global selected_atom
+    
+    target_id = find_atom_under_mouse(atoms)
+    
+    if right_click() and target_id != None and selected_atom != 0 and target_id != selected_atom:
+        
+        atom1 = find_in_dlist(atoms, "id", selected_atom)
+        atom2 = find_in_dlist(atoms, "id", target_id)
+        atom1_valence = find_valence(atom1['name'])
+        atom2_valence = find_valence(atom2['name'])
+        #print(atom1["links"][0][1])
+        if atom1_valence < atom2_valence and atom1_valence<3 :
+            atom12_valence = atom1_valence
+        elif atom2_valence <= atom1_valence and atom2_valence<=3 :
+            atom12_valence = atom2_valence
+        else:
+            atom12_valence = 3
+        
+        
+        
+        liaison_existante_1 = None
+        for l in atom1["links"]:
+            if l[0] == target_id:
+                liaison_existante_1 = l
+                break
+                
+        liaison_existante_2 = None
+        for l in atom2["links"]:
+            if l[0] == selected_atom:
+                liaison_existante_2 = l
+                break
+        
+        atom1_nb_liaisons = 0
+        for i in atom1["links"]:
+            atom1_nb_liaisons += int(i[1])
+        #print(atom1_nb_liaisons)
+        
+        atom2_nb_liaisons = 0
+        for i in atom2["links"]:
+            atom2_nb_liaisons += int(i[1])
+        #print(atom2_nb_liaisons)
+
+        if liaison_existante_1 == None :
+            if atom1_nb_liaisons<atom1_valence and atom2_nb_liaisons<atom2_valence:
+                atom1["links"].append((target_id, 1))
+                atom2["links"].append((selected_atom, 1))
+            
+        else:
+ 
+            nb_liaisons = liaison_existante_1[1]
+            
+            atom1["links"].remove(liaison_existante_1)
+            atom2["links"].remove(liaison_existante_2)
+            
+            if nb_liaisons < atom12_valence and atom1_nb_liaisons<atom1_valence and atom2_nb_liaisons<atom2_valence: 
+                atom1["links"].append((target_id, nb_liaisons + 1))
+                atom2["links"].append((selected_atom, nb_liaisons + 1))
+        
+        
+        
+
+
+def find_valence(atom_name:str)->int:#kimi
+    """trouve le nombre de valence d'un atome"""
+    for i in atoms_data :
+        if atom_name == i["symbole"]:
+            return i["valence"]
 
 
 def scaling(pos : tuple) -> tuple[int, int] :
@@ -713,7 +800,7 @@ def detect_win() -> bool :
     return win
             
  
-def background() -> None :
+def background(color:tuple) -> None :
     '''Dessine un arrière plan stylé'''
     
     for i in range(5) :
@@ -723,8 +810,10 @@ def background() -> None :
         pt2 = (((600 + cos(radians(180+tick*modifier))*radius), (450 + sin(radians(180+tick*modifier))*radius)))
         pt3 = (((600 + cos(radians(270+tick*modifier))*radius), (450 + sin(radians(270+tick*modifier))*radius)))
         pt4 = (((600 + cos(radians(tick*modifier))*radius), (450 + sin(radians(tick*modifier))*radius)))
-        
-        pg.draw.lines(surface, (120+i*20, 120+i*20, 120+i*20), True, [scaling(pt1), scaling(pt2), scaling(pt3), scaling(pt4)], int(5*SCALE))
+        r=min(color[0]+i*20,255)
+        g=min(color[1]+i*20,255)
+        b=min(color[2]+i*20,255)
+        pg.draw.lines(surface, (r,g,b), True, [scaling(pt1), scaling(pt2), scaling(pt3), scaling(pt4)], int(5*SCALE))
 
     
     
@@ -766,7 +855,6 @@ while running == True :
 
 pg.font.quit()
 pg.quit()
-
 
 
 
